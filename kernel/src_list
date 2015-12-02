@@ -1,0 +1,33 @@
+##---------------------------------------------------------------------------##
+## Akalon RTOS                                                               ##
+## Copyright (c) 2011-2015, Dasa Dahanayaka                                  ##
+## All rights reserved.                                                      ##
+##                                                                           ##
+## Usage of the works is permitted provided that this instrument is retained ##
+## with the works, so that any entity that uses the works is notified of     ##
+## this instrument.                                                          ##
+##                                                                           ##	
+## DISCLAIMER: THE WORKS ARE WITHOUT WARRANTY.                               ##
+##                                                                           ##
+##---------------------------------------------------------------------------##
+
+##---------------------------------------------------------------------------##
+##                                                                           ##
+## File Name       : src_list                                                ##
+## Description     : Compile list for the Akalon Kernel                      ##
+## Notes           :                                                         ##
+##                                                                           ##
+##---------------------------------------------------------------------------##
+
+# Objects ...
+OBJS	= $(BLD_DIR)/debug.o      \
+          $(BLD_DIR)/int.o        \
+          $(BLD_DIR)/kernel.o     \
+          $(BLD_DIR)/link.o       \
+          $(BLD_DIR)/mem.o        \
+          $(BLD_DIR)/msgs.o       \
+          $(BLD_DIR)/sem.o        \
+          $(BLD_DIR)/task.o       \
+          $(BLD_DIR)/task_api.o   \
+          $(BLD_DIR)/timer.o    
+

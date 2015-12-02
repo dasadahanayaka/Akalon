@@ -1,0 +1,180 @@
+/*---------------------------------------------------------------------------*/
+/* Akalon RTOS                                                               */
+/* Copyright (c) 2011-2015, Dasa Dahanayaka                                  */
+/* All rights reserved.                                                      */
+/*                                                                           */
+/* Usage of the works is permitted provided that this instrument is retained */
+/* with the works, so that any entity that uses the works is notified of     */
+/* this instrument.                                                          */
+/*                                                                           */	
+/* DISCLAIMER: THE WORKS ARE WITHOUT WARRANTY.                               */
+/*                                                                           */
+/*---------------------------------------------------------------------------*/
+
+
+Description:
+============
+
+Board    :    Raspberry-Pi B+
+CPU      :    Broadcom BCM2835. 700MHz ARM 11 ARM1176JZF-S code
+BSP	 :    <base>/boards/raspberry-pi 
+
+The BSP contains the Akalon RTOS port for the Raspberry-pi. Although, it has 
+been tested with the Raspberry-Pi B+ model, it should work on model's A, A+ and
+B models.
+
+Input and Output to and from the Raspberry-Pi is via a serial port interface
+which is provided by GPIO pins on the Raspberry-Pi.
+
+The Akalon RTOS is loaded from the Raspberry-Pi's MicroSD flash card.
+
+The BSP currently supports the following drivers...
+
+  a. Serial Port (for input and output)
+  b. Timer
+
+
+
+Tools:
+======
+
+Host     : Linux
+
+Akalon   : 2015-1202
+
+Compiler : GCC 4.9.2 20140904 (prerelease) (crosstool-NG 
+           linaro-1.13.1-4.9-2014.09 - Linaro GCC 4.9-2014.09)
+           
+           * Note: Use the arm-none-eabi family of executables
+
+Linker   : Same toolset as the compiler above
+
+Target   : Raspberry-Pi B+ with a Serial connection via the GPIO pins
+
+           WARNING: The Serial GPIO pins are 3.3 V and NOT 5V !!!
+                    Therefore, do not connect a standard Serial Port (ex. a PC)
+                    to the Raspberry-Pi
+
+           The Raspberry-Pi B+ has a 40 pin GPIO header. To get a Serial Port
+	   connection, connect the following pins on the RaspPi to a suitable
+           converter such as the Adafruit 964 cable or the FTDI TTL-232R-RPI
+           cable.
+
+	   Pin 6  - GND
+  	   Pin 8  - TXD0 / GPIO 14
+  	   Pin 10 - RXD0 / GPIO 15
+
+           	   
+           Please find more info at http://elinux.org/RPi_Serial_Connection
+
+Loader   : Akalon native. Tried to get it to load via uboot but was never
+	   able to get interrupts to work.
+
+
+Building Akalon:
+================
+
+   a. Set the location of the tools directory by modifying the TOOL_DIR 
+      variable in file <base>/boards/raspberry-pi/Makefile 
+
+      For example, my TOOL_DIR was...
+
+      TOOL_DIR=~/Tools/gcc-linaro-arm-none-eabi-4.9-2014.09_linux/bin
+
+      *** NOTE *** Before compiling, TOOL_DIR needs to be set.
+
+   b. Change to the bsp directory
+      $ cd <base>/boards/raspberry-pi
+
+   c. To build
+      $ make all
+
+      To clean and build
+      $ make clean all
+
+      - The built binary is named kernel.img 
+
+      Note: By default, the Akalon RTOS will be built in directory 
+      <base>/boards/raspberry-pi/bld. This default directory can be changed by
+      modifying the BLD_DIR variable in file 
+      <base>/boards/raspberry-pi/Makefile. 
+
+
+Loading:
+========
+
+The Akalon RTOS for the Raspberry-Pi is loaded via the onboard MicroSD flash
+drive. 
+
+    a. Back up the existing kernel.img file on the MicroSD flash drive (It
+       is assumed the Raspberry-Pi has already been operating under another
+       OS).
+
+    b. Copy the pre-built binary file <base>/boards/raspberry-pi/bld/kernel.img
+       file or a newly built kernel.img file into the MicroSD flash drive.
+
+    c. Install the MicroSD flash drive back into the Raspberry-Pi
+
+    d. Connect the Serial Ports
+
+    e. Power on the Raspberry-Pi.
+
+
+Notes:
+======
+
+For the Raspberry-Pi B+ Model..
+
+    a. Physical Devices start at 0x20000000. However, the docs would say 
+       peripherals are mapped at 0x7Exxxxxx (known as Bus Address), but they 
+       can be accessed at address 0x20000000. But the DMA engines should use 
+       the Bus Addresses which is 0x7Exxxxxx
+
+    b. RAM starts from 0x00000000 to 0x20000000 (512MB) and the Video starts
+       at address 0xC0000000. One half of the DRAM is reserved for Video.
+       Therefore, the maximum RAM available for Akalon is 256 MB. Also,
+       memory repeats every 1 GB (0x40000000)
+
+    c. Files in the Micro-SD Card:
+
+       bootcode.bin: First code to get executed. Loaded by the GPU into the L2
+       cache. Enables the RAM and proceeds to load the loader.bin file.
+
+       loader.bin: Has the ability to load elf files and proceeds to load the 
+       start.elf file. 
+
+       start.elf: Loads the kernel.img file to address 0x8000. If a config.txt 
+       file is found, start.elf will load according to the config.txt file. It
+       eventually resets the ARM core and start executing the kernel.img file
+
+       kernel.img: Executable file, loaded at 0x8000 by default.
+
+    d. To set the IP address, add the following to the uEnv.txt file
+
+       ipaddr=192.168.10.110
+       serverip=192.168.10.110
+
+       To get the ethernet device to wake-up...
+
+       > usb start
+       > tftpboot 0x00200000 boot.bin
+
+    e. Memory Map...
+
+       0x1fffffff    <-- End of RAM and Video Ram
+
+       0x10000000    <-- End of Usable RAM
+
+       0x0fffffff    <-- End of the Heap
+       0x0000?000    <-- Start of the Heap
+
+       0x0000?000    <-- bss_end
+       0x0000?000    <-- bss_start
+
+       0x00008000    <-- kernel.img is loaded here
+
+Misc:
+=====
+
+* AlexB: Thanks for your help !!!
+

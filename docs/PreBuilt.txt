@@ -1,0 +1,2 @@
+akalon-pc-i386.bin:	Akalon BSP for the Standard PC
+kernel.img:		Akalon BSP for the Raspberry Pi

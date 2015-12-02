@@ -1,0 +1,41 @@
+#!/bin/sh
+##---------------------------------------------------------------------------##
+## Akalon RTOS                                                               ##
+## Copyright (c) 2011-2015, Dasa Dahanayaka                                  ##
+## All rights reserved.                                                      ##
+##                                                                           ##
+## Usage of the works is permitted provided that this instrument is retained ##
+## with the works, so that any entity that uses the works is notified of     ##
+## this instrument.                                                          ##
+##                                                                           ##	
+## DISCLAIMER: THE WORKS ARE WITHOUT WARRANTY.                               ##
+##                                                                           ##
+##---------------------------------------------------------------------------##
+
+##---------------------------------------------------------------------------##
+##                                                                           ##
+## File Name       : gen_symbols                                             ##
+## Description     : Akalon Function Table Generator for Command Line Module ##
+## Notes           :                                                         ##
+##                                                                           ##
+##---------------------------------------------------------------------------##
+
+echo "#include <cli.h>" > $2
+echo "\n" >> $2
+
+nm $1 | awk '{if ($2 == "T") {print "extern void " $3 "() ;"}}' >> $2
+echo "\n" >> $2
+
+echo "func_t sym_funcs[] = {" >> $2
+nm $1 | awk '{if ($2 == "T") {print "    {"$3",""\""$3"\"""},"}}' >> $2
+echo "    {0,0}" >> $2
+echo "} ;" >> $2
+echo "\n" >> $2
+
+nm $1 | awk '{if (($2 == "D" || $2 == "B") && ($3 != "sym_funcs" && $3 != "sym_vars")) {print "extern void *" $3 " ; "}}' >> $2
+echo "\n" >> $2
+
+echo "var_t  sym_vars[] = {" >> $2
+nm $1 | awk '{if ($2 == "D" || $2 == "B") {print "    {&"$3",""\""$3"\"""},"}}' >> $2
+echo "    {0,0}" >> $2
+echo "} ;" >> $2

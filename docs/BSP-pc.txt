@@ -1,0 +1,358 @@
+﻿/*---------------------------------------------------------------------------*/
+/* Akalon RTOS                                                               */
+/* Copyright (c) 2011-2015, Dasa Dahanayaka                                  */
+/* All rights reserved.                                                      */
+/*                                                                           */
+/* Usage of the works is permitted provided that this instrument is retained */
+/* with the works, so that any entity that uses the works is notified of     */
+/* this instrument.                                                          */
+/*                                                                           */	
+/* DISCLAIMER: THE WORKS ARE WITHOUT WARRANTY.                               */
+/*                                                                           */
+/*---------------------------------------------------------------------------*/
+
+
+Description:  
+============
+
+BSP Name      : pc
+Location      : <base>/akalon/boards/pc
+Target        : Any PC (from a 386 to the latest i7)
+
+Notes:
+
+This is the BSP for any PC. It is also the standard Akalon release because 
+it makes the most commonly available computer into an Embedded System. By
+compiling it for the oldest 386 processor, the built binary will run on
+any PC.
+
+
+Details:
+========
+
+    * Target: Any PC
+
+    * The Clock Tic set to 18.2 tics per second (18.2 Hz), which is the 
+      standard PC system timer.
+
+    * Currently supports the following Drivers
+
+        - Keyboard
+        - VGA Display (through the 0xB8000 port)
+        - Serial Driver 
+        - PCI (interrupts are not enabled).
+
+    * The following interrupts are enabled.
+
+        - Keyboard
+        - Timer
+        - Serial
+
+    * The executable is multiboot compliant.
+
+Building:
+=========
+
+Host    : Any Linux System
+
+Toolset : Compiler     = GNU GCC 4.7.2 
+          Assembler    = GNU GCC 4.7.2 
+          Archiver     = GNU ar (binutils 2.22.90.20130924)
+          Linker       = GNU ld (binutils 2.22.90.20130924)
+	  bin creator  = GNU objdump (binutils 2.22.90.20130924)
+          make         = GNU make 3.81
+
+          Note: The BSP doesn't have to be built with the above tool
+                version. The above version were used to build the 
+                pre built version.
+ 
+Steps:
+
+  0) A pre built binary file akalon-pc-i386.bin is already provided for this 
+     BSP. It can be located in <base>/pre_built . The following steps are
+     needed only if rebuilding the BSP.
+
+  1) Make sure the toolset is installed on the host
+
+  2) Build...
+       $ cd <BASE>/akalon
+       $ ./build
+
+       Note: The proper way to build this BSP is...
+        
+       $ ./build pc-386 clean all
+
+
+  3) To interact via the serial port, in file <base>/boards/pc/bsp.c, modify
+     #if 1 to #if 0 on the following line...
+
+#if 1 /* To interact via the serial port, change this to a 0 */
+    os_link (&stdio_link, &kbd_link, &b8000_link) ;
+#else
+    os_link (&stdio_link, &ns16550_link, &ns16550_link) ;
+#endif
+
+  4) The the build completes, the following files will be built.
+ 
+     <base>/akalon/bld/akalon-pc-i386.bin    : The binary executable
+     <base>/akalon/bld/akalon-pc-i386.o      : Fully linked object file
+     <base>/akalon/bld/libakalon-ia32-i386.a : Archive file (excludes the
+                                               BSP objects)        
+
+     Note: The binary is built for 32-bit protected mode and is multiboot
+           complient.
+
+
+Running:
+========
+
+Currently, this BSP is loaded via GRUB-2, but previously it was loaded 
+via PCBOOT which has now been deprecated. Also, note that this BSP can run
+on a simulator such as qemu.
+
+
+Loading via GRUB:
+-----------------
+
+    1) On your GRUB-2 installation, add the following menu item into the 
+       boot/grub/grub.cfg file.
+
+       menuentry "akalon" {
+          multiboot /boot/akalon-pc-i386.bin
+          boot
+       }  
+ 
+    2) Copy the binary file <bsp>/bld/akalon-pc-i386.bin file into the GRUB-2
+       installation directory /boot. Since the <bsp>/bld/akalon-pc-i386.o 
+       file is fully linked and multiboot compliant, it too can be successfully
+       be loaded by GRUB-2.
+
+       Note: The pre built binary file <base>/pre_built/akalon-pc-i386.bin
+       can also be used.
+
+
+    The above instructions assumed an already existing GRUB-2 installed
+    hard drive or thumb drive. If you want to create a new GRUB-2 hard drive
+    or thumb drive, do the following on a Linux host.
+
+    Note: The following instructions assume you are installing GRUB-2 on a 
+          USB thumb drive.
+
+    a) Figure out the USB thumb drive name. This can be done by first 
+       connecting the the USB thumb drive and running the dmesg command.
+       Normally, the USB drive has the form /dev/sdX . 
+
+       WARNING: Make sure to get the correct drive name. Otherwise it will
+                render another drive in-operable. 
+ 
+    b) Mount the USB drive and create the boot folder.
+
+       $ mkdir <mount_point>
+       $ sudo mount /dev/sdX <mount_point>
+       $ mkdir <mount_point>/boot
+
+    c) Install GRUB-2
+
+       $ sudo grub-install --force --no-floppy --boot-directory=<mount_point>/boot /dev/sdX
+
+    c) Now create file <mount_point>/boot/grub/grub.cfg with the following
+
+       set timeout=3
+       set default=0
+
+       menuentry "akalon" {
+          multiboot /boot/akalon-pc-i386.bin
+          boot
+       }  
+
+    d) Reboot the Target PC with the GRUB-2 installed USB thumb drive and 
+       when you see the GRUB menu, select "akalon". 
+   
+       On modern PCs (5 years old), the USB thumb drive can be selected to
+       boot by pressing the F12 or ESC keys during the BIOS stage. For older 
+       PCs, go into the BIOS and set the 1st boot device to be the USB thumb
+       drive.
+    
+
+Loading via the qemu simulator:
+-------------------------------
+
+    1) Make sure the qemu simulator is installed on your host PC.
+
+    2) Make sure the akalon executable is located on a GRUB-2 ready hard
+       drive or USB thumb drive (see previous section).
+
+    3) Launch qemu...
+
+       $ sudo qemu -no-kvm -<h|f>da /dev/XdY [-serial /dev/ttyS0] 
+
+         h = Hard Drive (includes USB thumb drives). Use s for X. 
+         f = Floppy Drive. Use f for X.
+
+         The valuse for Y needs to be obtained form dmesg. Normally,
+         they are a,b or c
+ 
+
+
+
+
+
+===============================================================================
+WARNING: The following information is deprecated and exist for reference
+purposes only.
+===============================================================================
+  
+akalon was loaded into a PC in 2 different ways. It can also run on a
+emulator such as qemu.
+
+  1) PCBOOT
+
+     * NOTE: This is the preferred way to run Akalon
+ 
+     Copy the file <base>/akalon/bin/akalon-pc.bin into a 
+     Hard Drive or a Floppy Drive or a Thumb Drive. This is your Target Drive
+     where Akalon resides. Copying akalon-pc.bin can be done by the simple 
+     unix command "dd".
+
+     WARNING: Before starting, make sure you know the correct device name of 
+              the Target Hard/Floppy/Thumb Drive. This is normally of the 
+              form /dev/XdY where x = s/h/d or y = a/b/c. Also, your Target 
+              Drive will be completely wiped out after this procedure. Be 
+              absolutely sure before proceeding because one mistake and you 
+              will be crying for your mom !!!
+
+     In the case of a USB or a Floppy Drive, the Drive Mapping can be found 
+     by inserting the drive and then typing dmesg. As mentioned above, it 
+     should be named something like /dev/sdx or /dev/fdx
+
+     $ dd if=akalon-pc.bin of=/dev/<s|h>d<a|b|c>
+
+     O yes, you need to be sudo to be doing "dd"
+
+     * Some BIOSs (ex. Insyde) still won't boot the Thumb Drive since it
+       cannot find the Disk Geometry after doing the "dd" above. If this
+       is the case, just fire up fdisk and create a partition and save
+
+       ex. $ sudo fdisk /dev/<s|h>d<a|b|c> 
+             -> n <enter>
+             -> p <enter>
+             <enter>
+             <enter>
+             -> w
+
+  2) GRUB (pre 1.0 versions only) 
+
+     Your are almost on your own if using GRUB but here is a little bit of 
+     help to get rolling...
+
+     (a) Install GRUB on the Target Drive (Hard/Floppy/Thumb)
+
+         But before proceeding, please make sure you know the device name
+         of the installation media.
+ 
+         WARNING: Before starting, make sure you know the correct device name 
+                  of the Target Hard/Floppy/Thumb Drive. This is normally of 
+                  the form /dev/XdY where x = s/h/d or y = a/b/c. Also, your 
+                  Target Drive will be completely wiped out after this 
+                  procedure. Be absolutely sure before proceeding because one 
+                  mistake and you will be crying for your mom !!!
+
+         In the case of a USB or a Floppy Drive, the Drive Mapping can be 
+         found by inserting the drive and then typing dmesg. As mentioned 
+         above, it should be named something like /dev/sdx or /dev/fdx
+
+
+         GRUB requires 2 components on the installation media.
+
+           (1) A file system and
+           (2) The Grub Boot Loader
+
+         --  Wipe out the existing boot information on the installation media
+
+             $ sudo dd if=/dev/zero of=/dev/sdX count=100
+
+         --  Make it Bootable
+
+             $ fdisk /dev/sdX
+
+               n, p, 1, <enter>, <enter>, <enter>  (This creates the partition)
+  
+               l, 83 (This makes it a Linux Type disk)
+
+               a, 1 (This makes it bootable)
+
+               w (Save Data)
+
+         --  Format the Primary Partition to be an ext2 type
+
+             $ mkfs.ext2 /dev/sdbX 
+
+         -- Mount the installation device as a ext2 device. 
+ 
+             ex: $ mount -t ext2 /dev/sdX <location of mount>
+
+         --  Delete unnecessary files and create a detect file
+
+             $ cd <location of mount>
+             $ rm -rf lost+found
+             $ touch asd (This is to find Grub's correct mapping)
+
+
+         --  Find the device mapping from GRUB perspective
+
+             $ sudo grub
+
+               > find /asd
+
+               (hd1,0)  <---- This is the device mapping. Use this in step (j)  
+
+               > quit
+
+
+         --  Make Grub Sub-directories 
+
+             $ mkdir ./boot
+             $ mkdir ./boot/grub
+
+         --  Copy GRUB files
+
+             $ cp /boot/grub/*stage* ./boot/grub/.
+             $ cp /boot/menu.lst ./boot/grub/.
+ 
+         -- Install grub
+
+             $ sudo grub
+
+               > root (hd1,0)
+               > setup (hd1)
+               > quit
+
+         The Installation media is now GRUB Ready...
+
+     (b) Prepare Akalon to be grub "aware"
+
+         - Modify <base>/akalon/boards/pc/start.s to include
+           multiboot structures at the beginning of start:
+
+           * Multiboot information can be obtain on the web.
+ 
+     (c) Copy <base>/akalon/bin/akalon.o to the GRUB Disk 
+
+  (3) Akalon can also run on an emulator like qemu
+
+      $ qemu -no-kvm -hda <base>/akalon/bin/akalon-pc.bin
+
+      or if <base>/akalon/bin/akalon-pc.bin is already on a 
+      hard, floppy or a thumb drive...
+
+      $ sudo qemu -no-kvm -<h|f>da /dev/XdY [-serial /dev/ttyS0]
+    
+        where x = s/h/d or y = a/b/c..
+      
+
+
+
+ 
+
+
+

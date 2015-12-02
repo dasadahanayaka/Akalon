@@ -1,0 +1,66 @@
+Current Modules:
+================
+
+
+libs:
+-----
+
+Initialization     : None
+Link Interface     : None
+Dependency         : None
+Notes              : Currently implemented C-Library functions are...
+
+                     stdarg.h:
+                        va_start(), va_arg(), va_end(), va_copy()
+
+                     stdio.h:
+                        getchar(), putchar(), printf()
+
+                     stdlib.h:
+                        atoi(), itoa(), malloc(), free()
+
+                     string.h:
+                        memcpy(), memset(), strcpy(), strcmp(), strlen(),
+                        strncpy() 
+
+cli:
+----
+
+Initialization     : cli_init (void)
+Link Interface     : None
+Dependency         : stdio
+Notes              : (1) Runs at Priority 10
+                     (2) Uses putchar() and getchar() as interfaces 
+                     (3) All functions (except static functions) can be 
+                         called by the command line.
+                     
+
+
+stdio:
+------
+
+Initialization     : stdio_init (void)
+
+Link Interface     : stdio_link
+                     Internal Interface functions...
+                        - None but implements getchar() and putchar()
+                     Needed External functions...
+                        - Lower Tx
+                        - Lower Rx
+
+Dependency         : None
+
+Notes              : (1) Input Task runs at Priority 1
+		     (2) Output Task runs at Priority 2
+                     (3) Internal Buffer (input and output) set at 1024
+
+
+tests:
+------
+
+Initialization     : test_init (void)
+Link Interface     : None
+Dependency         : None
+Notes              : (1) Currently tests Semaphores, Messages and Timers
+
+

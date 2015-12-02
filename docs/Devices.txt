@@ -1,0 +1,50 @@
+﻿Current Drivers:
+================
+
+PC Keyboard:
+------------
+
+Initialization     : kbd_init (void)
+
+Link Interface     : kbd_link
+                     Internal Interface functions...
+                        - Upper Tx (...might Block)
+                     Needed External functions...
+                        - None
+ 
+ISR Function       : kbd_isr (u8 key)   
+Notes              : Currently Supports the US Keyboard.
+
+
+NS16550 Serial Device:
+----------------------
+
+Initialization     : ns16550_init (ns16550_t *)
+                     BSP needs to supply...
+                        (1) READ/WRITE Functions
+                        (2) Device Base Address
+                        (3) Clock Frequency
+                        (4) Baud Rate, Parity, Stop Bits, Data Bits
+ 
+Link Interface     : ns16550_link
+                     Internal Interface functions...
+                        - Upper Tx (...might Block)
+                        - Upper Rx (...might Block)
+
+                     Needed External functions...
+                        - None
+
+ISR Function       : ns16550_isr (void)   
+Notes              : (1) Input and Output Buffers are set to 16 Bytes
+                     (2) Transfers 1 Byte at a time (non-FIFO mode)
+
+
+PCI Bus:
+--------
+Initialization     : pci_init(pci_t *)
+                     BSP needs to supply the PCI Read and Write Functions 
+                     in structure pci_t
+
+Link Interface     : None
+ISR                : Needs Implementing
+Notes              : (1) Supports PCI Mechanism 1 Only

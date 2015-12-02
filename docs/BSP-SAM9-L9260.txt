@@ -1,0 +1,140 @@
+/*---------------------------------------------------------------------------*/
+/* Akalon RTOS                                                               */
+/* Copyright (c) 2011-2015, Dasa Dahanayaka                                  */
+/* All rights reserved.                                                      */
+/*                                                                           */
+/* Usage of the works is permitted provided that this instrument is retained */
+/* with the works, so that any entity that uses the works is notified of     */
+/* this instrument.                                                          */
+/*                                                                           */	
+/* DISCLAIMER: THE WORKS ARE WITHOUT WARRANTY.                               */
+/*                                                                           */
+/*---------------------------------------------------------------------------*/
+
+Board    :  Olimex SAM9-L9260
+CPU      :  Atmel AT91SAM9260 ARM9 180MHz, 64MB RAM
+Location :  <base>/boards/sam9-l9260
+
+Description:
+------------
+
+The sam9-l9260 bsp is for the Olimex SAM9-L9260 Arm Board. Currently, it only
+supports the timer and the uart interrupts (drivers are located in file 
+<base>/boards/sam9-l9260/drivers.c) which are off the IRQ interrupt on
+the ARM processor.
+
+The sam9-l9260 board has 64MB of RAM onboard RAM starting at 0x20000000. U-Boot
+users SRAM located at the first 256MB space. Akalon is loaded at 0x20000000 
+and currently, it takes about 20K of space. However, 1MB is allocated for
+Akalon so that a user can compile in an application of about 980K. The rest
+of the space is allocated for the bss section. If this amount (980K) is not
+enough for the application, then go to file <base>/boards/sam9-l9260/start.c and
+modify the input parameters of the os_init() call in function bsp_pre_init().
+
+Thus the RAM address is as follows (for the rest of the address map, consult
+the Atmel AT91SAM9260 docs)..
+
+0x23ffffff <- Top of RAM (bss section)
+
+0x20100000 <- End of the allocated space for the Akalon RTOS
+           <- Free space
+0x20005xxx <- Currently ending location of the Akalon RTOS
+
+0x20000000 <- Start of the Akalon RTOS
+
+BTW, use the arm-none-eabi-nm -n command to get the Akalon RTOS map.
+
+
+Tools:
+------
+
+Host     : Linux
+
+Akalon   : 2014-1011
+
+Compiler : GCC V 4.2.3 (Codesourcery Version 2008q1-126). The compiler was
+           provided by Olimex. The executables are from the arm-none-eabi 
+           family.
+
+Linker   : GNU ld (Codesourcery Version 2008q1-126) 2.18.50.2008215
+
+
+Target   : Olimex SAM9-L9260 with a Serial and Ethernet connection (Ethernet
+           connection is used for loading the Akalon RTOS binary image). 
+
+Loader   : U-Boot Version 1.3.4-00001-g8ed2f5f-dirty (Aug 20 2008 - 18:26:55)
+
+
+
+Building Akalon:
+----------------
+
+   a. Set the location of the tools directory by modifying the TOOL_DIR 
+      variable in file <base>/boards/sam9-l9260/Makefile 
+
+      For example, my TOOL_DIR was...
+
+      TOOL_DIR=~/Olimex/bin/codesourcery-armgcc-2008q1/bin
+
+      *** NOTE *** Before compiling, TOOL_DIR needs to be set.
+
+   b. Change to the bsp directory
+      $ cd <base>/boards/sam9-l9260
+
+   c. To build
+      $ make all
+
+      To clean and build
+      $ make clean all
+
+      - The built binary is named akalon-sam9-l9260-926ejs.bin
+
+      Note: By default, the Akalon RTOS will be built in directory 
+      <base>/boards/sam9-l9260/bld. This default directory can be changed by
+      modifying the BLD_DIR variable in file <base>/boards/sam9-l9260/Makefile.
+
+
+Loading:
+--------
+The Akalon RTOS for the SAM9-L9260 is loaded by the U-Boot bootloader from a
+tftp server. BTW, U-Boot is already preloaded by Olimex on SAM9-L9260 cards.
+To load the Akalon RTOS...
+
+    a. Setup a tftp server (out of scope for this document)
+
+    b. Copy the Akalon RTOS binary akalon-sam9-l9260-926ejs.bin to the
+       directory where the tftp server looks for files
+
+    c. Connect an Ethernet cable and a Serial cable to the Olimex SAM9-L9260 
+       board and the Host computer.
+
+    d. Bring up a Serial Console on the Host computer and set the baud rate 
+       to 115200
+
+    e. Power On the SAM9-L9260 Board.
+
+    f. Stop the boot countdown and set the IP address of the tftp server on 
+       the SAM9-L9260 U-Boot bootloader. 
+
+       U-Boot> setenv serverip <tftp server ip address>
+       U-Boot> saveenv
+
+       The IP address of the SAM9-L9206 board can also be set with...
+
+       U-Boot> setenv ipaddr <board ip address>
+
+    g. Load the Akalon RTOS          
+
+       U-Boot> tftpboot 0x20000000 akalon-sam9-l9260-926ejs.bin
+
+Executing:
+----------
+
+At the U-Boot Prompt, execute the akalon-sam9-l9260-926ejs.bin binary by...
+
+      $ go 0x20000000
+
+
+
+
+

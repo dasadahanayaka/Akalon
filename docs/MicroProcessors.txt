@@ -1,0 +1,18 @@
+﻿Currently supported Microprocessors
+===================================
+
+ia32
+====
+
+* 32 (bit protected mode).
+
+* Commonly known as i386, but from a software perspective, encompasses the
+  entire Intel range of x86 microprocessors.
+
+* The processor type can be fine tuned by changing the CPU flag in the
+  configuration files located in the <base>/config sub-directory.
+
+* All processor specific functions are located in <base>/cpu/ia32
+  sub-directory.
+
+

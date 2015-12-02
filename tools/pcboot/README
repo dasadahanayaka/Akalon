@@ -1,0 +1,110 @@
+PCBOOT
+======
+
+What is it ?
+------------
+
+       (1) A Simple Open Source Bootloader for a PC
+
+       
+Why another Boot Loader ?
+-------------------------
+
+       (1) GRUB is too hard to configure (even in the pre 1.xx days). GRUB 2.0 ?
+           Forget it !!!. Ditto for other bootloaders too. BTW, GRUB 2.0 has
+           to be the most widely used POS.
+
+       (2) None of the Boot Loaders just do the basic thing and get out of 
+           the way.
+         
+
+PCBOOT Needed to be...
+----------------------
+
+       (1) Open Sourced and be built with Open Sourced tools. 
+
+       (2) Configurable.
+
+       (3) Getting into Protected Mode
+
+       (4) Boot from a USB thumb drive.
+
+       (5) ...and be as Simple as Possible. In-fact this is what it does...
+
+              (a) Gets partially loaded (512 Bytes) by the BIOS (ie is bootable)
+       	      (b) Stop Interrupts
+	      (c) Save off the disk type
+	      (d) Loads the rest of PCBOOT
+	      (e) Enable A20 (needed in Real-Mode)
+	      (f) Setup the GDT and IDT for Protected Mode
+	      (g) Go into Protected Mode
+	      (h) Clear the Screen
+
+       	      (i) Clear SDRAM so the OS is loaded into a clean area. This is 
+	          the area specified by OS_START and OS_END
+
+       	      (j) Load the OS from the source drive starting at logical sector
+                  LBA_START to LBA_END and verifies the data.
+
+	          Note: During the Loading, PCBOOT goes back and forth between
+	                Real and Protected Modes.
+
+              (k) Transfer to the Start of OS (in Protected Mode)
+
+
+Limitations of PCBOOT:
+----------------------
+
+       (1) Older BIOS's (pre 2002) might not be able to boot a USB drive, 
+           thus preventing the OS to boot off a thumbdrive. This is not
+           the fault of PCBOOT and the fault of the BIOS.
+
+Files:
+------
+
+       start.S     :  PCBOOT's Entry Point (in Assembler)
+       main.c      :  PCBOOT's C entry point
+       printf.c    :  The printf() function
+       Makefile    :  Makefile
+       README      :  This file
+
+       pcboot.bin  :  Bootable File
+
+
+PCBOOT Map (on Disk):
+---------------------
+
+       0x00000   <-  Start of PCBOOT (Sector 1)
+       0x00fff   <-  End of PCBOOT   (Sector 8) (4K)
+       0x01000   <-  Start of the OS (Sector 9   / LBA_START)
+       0x21000   <-  End of the OS   (Sector 264 / LBA_END)
+
+       Note: Disk Sector numbers start with 1 and NOT 0. But dd's "seek=" 
+             starts with 0 so when building the bin file with PCBOOT and 
+	     the OS, make sure seek is set to 8 and not 9. Ditto with int 
+	     0x13 Op 0x42 since sector numbers start with 0.
+
+
+PCBOOT Map (in SDRAM):
+----------------------
+
+       0x0000    <-  Start of Memory
+
+       0x7c00    <-  MBR. Start of PCBOOT (_start) loaded by BIOS (512 Bytes)
+
+       0x7dee    <-  Boot Signature
+       0x7e00    <-  Rest of pcboot.bin loaded by PCBOOT.
+
+       0x8bff    <-  End of PCBOOT (8 Sectors = 4KB)
+
+       0xffff    <-  PCBOOT_STACK. Initial Real-Mode Stack (Grows towards Zero)
+
+       0x10000   <-  DISK_XFER_DST. (RAM hold area for data from disk)
+       0x1ffff   <-- End of hold area
+
+       0x100000  <-  Start of the OS (OS_START)
+       0x2000000 <-  End of the OS (OS_END)
+
+       Note: The area between 0x7E00 - 0x7ffff = 480 KB is the only area
+             guaranteed for free use by the BIOS (in Real Mode).
+
