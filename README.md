@@ -7,7 +7,7 @@ Akalon is a Bare-Bones Embedded RTOS that's designed to be simple and portable t
 * Simple, Modularized Design
 * Portability to different Microprocessors
 * Small Footprint
-* Good Documentation (User's Manual is located in file ./docs/Akalon_Manual.pdf)
+* Good Documentation
 
 #### Features
 * Simple API (less than 25 calls)
@@ -19,4 +19,8 @@ Akalon is a Bare-Bones Embedded RTOS that's designed to be simple and portable t
 * Written in C and some assembler and well commented
 * Current BSPs include a Standard PC and the Raspberry Pi 
 
+#### Getting Started
+* Read the Akalon User's Manual (Akalon/docs/Akalon_Manual.pdf)
+* Read the Board Specific Manual (Akalon/docs/BSP-XXX.txt)
+* Check for pre-built images (Akalon/pre_built)
   
