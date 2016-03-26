@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------*/
 /* Akalon RTOS                                                               */
-/* Copyright (c) 2011-2015, Dasa Dahanayaka                                  */
+/* Copyright (c) 2011-2016, Dasa Dahanayaka                                  */
 /* All rights reserved.                                                      */
 /*                                                                           */
 /* Usage of the works is permitted provided that this instrument is retained */
@@ -113,12 +113,12 @@ static   void     task2 (void)
 
 /*---------------------------------------------------------------------------*/
 /*                                                                           */
-/* Function Name   : test_init                                               */
+/* Function Name   : test_start                                              */
 /* Description     : Test the Kernel !!!                                     */
 /* Notes           :                                                         */
 /*                                                                           */
 /*---------------------------------------------------------------------------*/
-usys     test_init (usys test_num, usys arg)
+usys     test_start (usys test_num, usys arg)
 {
     usys    stat  ;
 
@@ -200,6 +200,17 @@ usys     test_init (usys test_num, usys arg)
 
     return GOOD ;
 
+} /* End of function test_start() */
+
+
+/*---------------------------------------------------------------------------*/
+/*                                                                           */
+/* Function Name   : test_init                                               */
+/* Description     : Test initialization routine                             */
+/* Notes           :                                                         */
+/*                                                                           */
+/*---------------------------------------------------------------------------*/
+usys     test_init  (void)
+{
+    return GOOD ;
 } /* End of function test_init() */
-
-

@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------*/
 /* Akalon RTOS                                                               */
-/* Copyright (c) 2011-2015, Dasa Dahanayaka                                  */
+/* Copyright (c) 2011-2016, Dasa Dahanayaka                                  */
 /* All rights reserved.                                                      */
 /*                                                                           */
 /* Usage of the works is permitted provided that this instrument is retained */
@@ -189,7 +189,7 @@ usys     fdXfer (usys sectorStart, usys numSectors)
 /*---------------------------------------------------------------------------*/
 void     cStart (void)
 {
-    void (*func)(usys memSize) ;
+    void (*func)(usys heap_start, usys heap_size) ;
     usys *dst, stat ;
 
     /* If we get here, we are in protected mode. */
@@ -224,7 +224,7 @@ void     cStart (void)
 
     printf ("pcboot: Activating the OS...\n") ;
     func = (void *) OS_START ;
-    func(OS_END) ;
+    func (HEAP_START, HEAP_SIZE) ;
 
 } /* End of function cStart() */
 

@@ -1,6 +1,6 @@
 ##---------------------------------------------------------------------------##
 ## Akalon RTOS                                                               ##
-## Copyright (c) 2011-2015, Dasa Dahanayaka                                  ##
+## Copyright (c) 2011-2016, Dasa Dahanayaka                                  ##
 ## All rights reserved.                                                      ##
 ##                                                                           ##
 ## Usage of the works is permitted provided that this instrument is retained ##
@@ -25,4 +25,12 @@ OBJS	= $(BLD_DIR)/boot.o            \
           $(BLD_DIR)/bsp_asm.o         \
           $(BLD_DIR)/bsp.o             \
           $(BLD_DIR)/dbg_putchar.o     \
-          $(BLD_DIR)/devices.o
+          $(BLD_DIR)/devices.o         \
+          $(BLD_DIR)/config.o
+
+
+SIM_OBJS= $(BLD_DIR)/bsp.o             \
+          $(BLD_DIR)/bsp_asm.o         \
+          $(BLD_DIR)/dbg_putchar.o     \
+          $(BLD_DIR)/devices.o         \
+          $(BLD_DIR)/config.o

@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------*/
 /* Akalon RTOS                                                               */
-/* Copyright (c) 2011-2015, Dasa Dahanayaka                                  */
+/* Copyright (c) 2011-2016, Dasa Dahanayaka                                  */
 /* All rights reserved.                                                      */
 /*                                                                           */
 /* Usage of the works is permitted provided that this instrument is retained */
@@ -23,29 +23,6 @@
 #include "pc.h"
 
 
-char   *help_table[] =
-{
-    "c         -- Show Copyright",
-    "h         -- Show Help Menu",
-    "r         -- Read Address",
-    "t         -- Show Clock Tics",
-    "v         -- Show Version",
-    "w         -- Write Address",
-    "test_init -- Test Kernel",
-    "cls       -- Clear Screen",
-    "in8       -- Read  IO (8 Bits)",
-    "in16      -- Read  IO (16 Bits)",
-    "in32      -- Read  IO (32 Bits)",
-    "out8      -- Write IO (8 Bits)",
-    "out16     -- Write IO (16 Bits)",
-    "out32     -- Write IO (32 Bits)",
-    "pci_show  -- Show all PCI Devices",
-    "pci_dev   -- Show a PCI Device",
-    NULL
-} ;
-
-
-
 /*---------------------------------------------------------------------------*/
 /*                                                                           */
 /* Function Name   : bsp_pre_init                                            */
@@ -53,7 +30,11 @@ char   *help_table[] =
 /* Notes           :                                                         */
 /*                                                                           */
 /*---------------------------------------------------------------------------*/
-void     bsp_pre_init (usys heap_addr, usys heap_size) 
+#ifdef SIM_BUILD
+void     _start (usys heap_addr, usys heap_size)
+#else
+void     bsp_pre_init (usys heap_addr, usys heap_size)
+#endif 
 {
     usys  stat ;
 
@@ -92,11 +73,8 @@ void     bsp_post_init (void)
     if (B8000_init () != GOOD)
        printf ("ERR: B8000_init() Failed !!!\n") ; 
 
-    if (stdio_init () != GOOD)
-       printf ("ERR: initStdio() Failed !!!\n") ; 
-
-    if (cli_init () != GOOD)
-       printf ("ERR: cli_init() Failed !!!\n") ; 
+    /* Initialize the configured modules */
+    mod_init() ;
 
     /**************************/
     /* Initialize all Devices */
@@ -123,35 +101,27 @@ void     bsp_post_init (void)
 } /* End of function bsp_post_init () */
 
 
+
 /*---------------------------------------------------------------------------*/
 /*                                                                           */
-/* Function Name   : h                                                       */
-/* Description     : Show Help                                               */
+/* Function Name   : syshelp                                                 */
+/* Description     : System Help                                             */
 /* Notes           :                                                         */
 /*                                                                           */
 /*---------------------------------------------------------------------------*/
-void     h (void)
+void     syshelp (void)
 {
-    char **item ;
+    printf ("\nAkalon RTOS help (System Specific Commands)\n\n") ;
 
-    printf ("\nHelp Menu\n") ;
+    printf ("in8           -- Read  IO (8 Bits)\n")  ;
+    printf ("in16          -- Read  IO (16 Bits)\n") ;
+    printf ("in32          -- Read  IO (32 Bits)\n") ;
+    printf ("out8          -- Write IO (8 Bits)\n")  ;
+    printf ("out16         -- Write IO (16 Bits)\n") ;
+    printf ("out32         -- Write IO (32 Bits)\n") ;
 
-    item = help_table ;
+} /* End of function syshelp() */
 
-    while (*item != NULL)
-    {
-       printf ("%s\n", *item) ;
-       item++ ;
-    }
-
-} /* End of function help() */
-
-
-extern   void      test_init() ;
-void     do_no_call_this_func (void)
-{
-    test_init () ;
-}
 
 
 

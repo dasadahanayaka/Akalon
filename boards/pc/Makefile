@@ -1,6 +1,6 @@
 ##---------------------------------------------------------------------------##
 ## Akalon RTOS                                                               ##
-## Copyright (c) 2011-2015, Dasa Dahanayaka                                  ##
+## Copyright (c) 2011-2016, Dasa Dahanayaka                                  ##
 ## All rights reserved.                                                      ##
 ##                                                                           ##
 ## Usage of the works is permitted provided that this instrument is retained ##
@@ -71,14 +71,13 @@ $(BLD_DIR):
 
 ifneq ($(DIR),)
 include $(BASE_DIR)/$(DIR)/src_list
-VPATH = $(BASE_DIR)/inc:$(BASE_DIR)/$(DIR):
+VPATH = $(BASE_DIR)/inc:$(BASE_DIR)/$(DIR):$(BASE_DIR)/boards:
 IPATH = -I$(BASE_DIR)/inc -I$(BASE_DIR)/$(DIR)
 endif
 
 lib_bld: echo_dir $(OBJS)
 	$(AR) $(ARFLAGS) $(LIB_FILE) $(OBJS)
 	rm -f $(OBJS)
-
 
 
 ##########################
@@ -102,14 +101,29 @@ ARFLAGS	 = -rcsv
 LIB_FILE = $(BLD_DIR)/libakalon-$(ARCH)-$(CPU).a
 EXE_NAME = $(BLD_DIR)/akalon-$(BSP)-$(CPU)
 
+
 ## BSP Build Rule
 
-bsp_bld: echo_dir $(OBJS)
-	$(LD) -nostdlib -Ttext=0x00100000 -N -L$(BLD_DIR) $(OBJS) -o $(BLD_DIR)/tmp.o -lakalon-$(ARCH)-$(CPU)
+ifeq ($(SIM),yes)
+BSP_OBJS = $(SIM_OBJS)
+CFLAGS  += -DSIM_BUILD
+else
+BSP_OBJS = $(OBJS)
+endif
+
+
+bsp_bld: echo_dir $(BSP_OBJS)
+	$(LD) -nostdlib -Ttext=0x00100000 -N -L$(BLD_DIR) $(BSP_OBJS) -o $(BLD_DIR)/tmp.o -lakalon-$(ARCH)-$(CPU)
 	$(BASE_DIR)/tools/gen_symbols $(BLD_DIR)/tmp.o $(BLD_DIR)/symbols.c
 	$(CC) $(CFLAGS) $(IPATH) -c $(BLD_DIR)/symbols.c -o $(BLD_DIR)/symbols.o
-	$(LD) -nostdlib -Ttext=0x00100000 -N -L$(BLD_DIR) $(OBJS) $(BLD_DIR)/symbols.o -o $(EXE_NAME).o -lakalon-$(ARCH)-$(CPU) 
+	$(LD) -nostdlib -Ttext=0x00100000 -N -L$(BLD_DIR) $(BSP_OBJS) $(BLD_DIR)/symbols.o -o $(EXE_NAME).o -lakalon-$(ARCH)-$(CPU) 
 	$(BIN) -O binary $(EXE_NAME).o $(EXE_NAME).bin
+ifeq ($(SIM),yes)
+	dd if=/dev/zero of=$(EXE_NAME)-sim.bin bs=1M count=1
+	dd if=../../tools/pcboot/pcboot.bin of=$(EXE_NAME)-sim.bin conv=notrunc
+	dd if=$(EXE_NAME).bin of=$(EXE_NAME)-sim.bin bs=512 seek=8 conv=notrunc  
+	@echo "*** Made Simulator Build ***"
+endif
 	rm -rf $(OBJS) $(BLD_DIR)/symbols.* $(BLD_DIR)/tmp.o
 
 

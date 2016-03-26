@@ -13,23 +13,49 @@
 
 /*---------------------------------------------------------------------------*/
 /*                                                                           */
-/* File Name       : modules.h                                               */
-/* Description     : Akalon's Module Interface                               */
+/* File Name       : config.c                                                */
+/* Description     : Configuration Code                                      */
 /* Notes           :                                                         */
 /*                                                                           */
 /*---------------------------------------------------------------------------*/
-#ifndef  MODULES_H
-#define  MODULES_H
+#include <akalon.h>
+#include <stdio.h>
+#include <config.h>
 
-extern   usys      mod_init   (void) ;
+/*---------------------------------------------------------------------------*/
+/*                                                                           */
+/* Function Name   : mod_init                                                */
+/* Description     : Configure all the modules.                              */
+/* Notes           : Only module writers should modify this function         */
+/*                                                                           */
+/*---------------------------------------------------------------------------*/
+usys     mod_init (void)
+{
+    usys stat = GOOD ;
 
-/* Tests...*/
-extern   usys      test_init  (void) ;
+#ifdef   INCLUDE_STDIO
+    if (stdio_init () != GOOD)
+    {
+       printf ("ERR: initStdio() Failed !!!\n") ;
+       stat = BAD ; 
+    }
+#endif
+#ifdef   INCLUDE_CLI
+    if (cli_init () != GOOD)
+    {
+       printf ("ERR: cli_init() Failed !!!\n") ; 
+       stat = BAD ; 
+    }
+#endif
+#ifdef   INCLUDE_TESTS
+    if (test_init () != GOOD)
+    {
+       printf ("ERR: test_init() Failed !!!\n") ; 
+       stat = BAD ; 
+    }
+#endif
 
-/* CLI Interface */
-extern   usys      cli_init   (void) ;
+    return stat ;
+} /* End of function mod_init () */
 
-extern   usys      stdio_init (void) ;
-extern   link_t    stdio_link ;
 
-#endif   /* !MODULES_H */

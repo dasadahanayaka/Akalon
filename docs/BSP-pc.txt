@@ -1,6 +1,6 @@
 ﻿/*---------------------------------------------------------------------------*/
 /* Akalon RTOS                                                               */
-/* Copyright (c) 2011-2015, Dasa Dahanayaka                                  */
+/* Copyright (c) 2011-2016, Dasa Dahanayaka                                  */
 /* All rights reserved.                                                      */
 /*                                                                           */
 /* Usage of the works is permitted provided that this instrument is retained */
@@ -64,7 +64,7 @@ Toolset : Compiler     = GNU GCC 4.7.2
 
           Note: The BSP doesn't have to be built with the above tool
                 version. The above version were used to build the 
-                pre built version.
+                pre built version. Also, not the compiler needs to be 32-bit.
  
 Steps:
 
@@ -75,12 +75,14 @@ Steps:
   1) Make sure the toolset is installed on the host
 
   2) Build...
-       $ cd <BASE>/akalon
-       $ ./build
+     $ cd <BASE>/akalon/boards/pc
+     $ make clean all
 
-       Note: The proper way to build this BSP is...
-        
-       $ ./build pc-386 clean all
+     If the simulator (qemu) version needs to be built, run
+     $ cd <BASE>/akalon/tools/pcboot
+     $ make clean all
+     $ cd <BASE>/akalon/boards/pc
+     $ make clean all SIM=yes
 
 
   3) To interact via the serial port, in file <base>/boards/pc/bsp.c, modify
@@ -338,9 +340,9 @@ emulator such as qemu.
  
      (c) Copy <base>/akalon/bin/akalon.o to the GRUB Disk 
 
-  (3) Akalon can also run on an emulator like qemu
+  (3) Akalon can also run on an simulator such as qemu
 
-      $ qemu -no-kvm -hda <base>/akalon/bin/akalon-pc.bin
+      $ qemu -no-kvm -hda <base>/akalon/bin/akalon-pc-i386-sim.bin
 
       or if <base>/akalon/bin/akalon-pc.bin is already on a 
       hard, floppy or a thumb drive...

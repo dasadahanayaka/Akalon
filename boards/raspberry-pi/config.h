@@ -13,23 +13,17 @@
 
 /*---------------------------------------------------------------------------*/
 /*                                                                           */
-/* File Name       : modules.h                                               */
-/* Description     : Akalon's Module Interface                               */
+/* File Name       : config.h                                                */
+/* Description     : Configuration options for the Raspberry-Pi              */
 /* Notes           :                                                         */
 /*                                                                           */
 /*---------------------------------------------------------------------------*/
-#ifndef  MODULES_H
-#define  MODULES_H
+#ifndef  CONFIG_H
+#define  CONFIG_H
 
-extern   usys      mod_init   (void) ;
+/* Modules */
+#define  INCLUDE_CLI
+#define  INCLUDE_STDIO
+#define  INCLUDE_TESTS
 
-/* Tests...*/
-extern   usys      test_init  (void) ;
-
-/* CLI Interface */
-extern   usys      cli_init   (void) ;
-
-extern   usys      stdio_init (void) ;
-extern   link_t    stdio_link ;
-
-#endif   /* !MODULES_H */
+#endif  /* ! CONFIG_H */

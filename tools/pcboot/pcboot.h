@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------*/
 /* Akalon RTOS                                                               */
-/* Copyright (c) 2011-2015, Dasa Dahanayaka                                  */
+/* Copyright (c) 2011-2016, Dasa Dahanayaka                                  */
 /* All rights reserved.                                                      */
 /*                                                                           */
 /* Usage of the works is permitted provided that this instrument is retained */
@@ -41,8 +41,10 @@
 #define  LBA_START           8                   /* 4KB Mark */
 #define  LBA_END             (LBA_START + 256)   /* 128 KB   */     
 
-#define  OS_START            0x100000            /*  1 MB    */  
-#define  OS_END              0x2000000           /* 32 MB    */
+#define  OS_START            0x100000            /* 1 MB    */  
+#define  OS_END              0x2000000           /* 32 MB   */
+#define  HEAP_START          0x200000            /* 2 MB    */
+#define  HEAP_SIZE           0x1000000           /* 16 MB   */
 
 #define  PMODE_STACK         0x7ffff   /* Protected Mode Stack */
 

@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------*/
 /* Akalon RTOS                                                               */
-/* Copyright (c) 2011-2015, Dasa Dahanayaka                                  */
+/* Copyright (c) 2011-2016, Dasa Dahanayaka                                  */
 /* All rights reserved.                                                      */
 /*                                                                           */
 /* Usage of the works is permitted provided that this instrument is retained */
@@ -139,7 +139,31 @@ void     w (usys loc, usys val, usys size)
 } /* End of function w () */
 
 
+/*---------------------------------------------------------------------------*/
+/*                                                                           */
+/* Function Name   : h                                                       */
+/* Description     : Help                                                    */
+/* Notes           :                                                         */
+/*                                                                           */
+/*---------------------------------------------------------------------------*/
+void     h (void)
+{
+    printf ("\nAkalon RTOS help (Standard Commands)\n\n") ;
+    printf ("c             --  Show Copyright\n")    ;
+    printf ("h or help     --  Show Help Menu\n")    ;
+    printf ("syshelp       --  Show System specific Help Menu\n") ;
+    printf ("t             --  Show all Tasks\n")    ;
+    printf ("tics          --  Show Timer Tics\n")   ;
+    printf ("r             --  Read Address\n")      ;
+    printf ("v             --  Show Version\n")      ;
+    printf ("w             --  Write Address\n")     ;
+    printf ("\n") ;
+    printf ("NOTE: Can call any C function from the CLI. ") ;
+    printf ("Also, can display any variable\n") ;
+} /* End of function h() */
 
-
-
+void     help (void)
+{
+    h() ;
+} /* End of function help() */
 

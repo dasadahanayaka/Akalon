@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------*/
 /* Akalon RTOS                                                               */
-/* Copyright (c) 2011-2015, Dasa Dahanayaka                                  */
+/* Copyright (c) 2011-2016, Dasa Dahanayaka                                  */
 /* All rights reserved.                                                      */
 /*                                                                           */
 /* Usage of the works is permitted provided that this instrument is retained */
@@ -82,16 +82,13 @@ void     bsp_post_init (void)
     vec_loc = (volatile u32 *) 0x1c ;
     *vec_loc = 0xe59ff018 ;
 
-    /* Initialize the rest of the system */
+    /* Initialize the devices */
 
     if (dev_init() != GOOD)
       printf ("ERR: dev_init() failed !!!\n") ;
 
-    if (stdio_init () != GOOD)
-       printf ("ERR: stdio_init() Failed !!!\n") ; 
-
-    if (cli_init () != GOOD)
-       printf ("ERR: cli_init() Failed !!!\n") ;
+    /* Initialize the modules */
+    mod_init () ;
 
     /* Module Links */
     os_link (&stdio_link, &uart_link, &uart_link) ;
@@ -99,9 +96,4 @@ void     bsp_post_init (void)
 } /* End of function bsp_post_init () */
 
 
-extern   void      test_init(int, int) ;
-void     do_not_call_this_func (void)
-{
-    test_init(1,0x40000) ;
-} 
 
