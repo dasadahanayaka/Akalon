@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------*/
 /* Akalon RTOS                                                               */
-/* Copyright (c) 2011-2015, Dasa Dahanayaka                                  */
+/* Copyright (c) 2011-2016, Dasa Dahanayaka                                  */
 /* All rights reserved.                                                      */
 /*                                                                           */
 /* Usage of the works is permitted provided that this instrument is retained */
@@ -28,7 +28,7 @@
 /* Notes           : Only use in Debug Mode                                  */
 /*                                                                           */
 /*---------------------------------------------------------------------------*/
-void     dbg_putchar (char c)
+void     dbg_putchar (int c)
 {
     volatile u32 *addr ;
 
@@ -39,7 +39,7 @@ void     dbg_putchar (char c)
 
     addr = (volatile u32 *) 0x20201000 ;
 
-    *addr = c ;
+    *addr = (char) c ;
 
 } /* End of function dbg_putchar() */
 

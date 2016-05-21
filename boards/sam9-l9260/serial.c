@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------*/
 /* Akalon RTOS                                                               */
-/* Copyright (c) 2011-2015, Dasa Dahanayaka                                  */
+/* Copyright (c) 2011-2016, Dasa Dahanayaka                                  */
 /* All rights reserved.                                                      */
 /*                                                                           */
 /* Usage of the works is permitted provided that this instrument is retained */
@@ -26,7 +26,7 @@
 /* Configuration Start */
 
 #define  NUM_DEVS  2
-#define  BUF_SIZE  4
+#define  BUF_SIZE  4096  /* WARNING: The hang bug here <-- DO */
 
 /* Configuration End   */
 
@@ -313,7 +313,7 @@ usys     uart_init (void)
     reg = (volatile u32 *) (0xFFFFF200) ;
     *reg = 0x100 ;
 
-    /* Enable the Transmitter Interrupt */
+    /* Enable the Rx Interrupt */
     reg = (volatile u32 *) (0xFFFFF208) ;
     *reg = 0x1 ;
 

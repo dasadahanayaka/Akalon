@@ -1,6 +1,6 @@
 ##---------------------------------------------------------------------------##
 ## Akalon RTOS                                                               ##
-## Copyright (c) 2011-2015, Dasa Dahanayaka                                  ##
+## Copyright (c) 2011-2016, Dasa Dahanayaka                                  ##
 ## All rights reserved.                                                      ##
 ##                                                                           ##
 ## Usage of the works is permitted provided that this instrument is retained ##
@@ -20,7 +20,7 @@
 ##---------------------------------------------------------------------------##
 
 # Objects ...
-OBJS	= $(BLD_DIR)/test_main.o       \
+OBJS	= $(BLD_DIR)/test_init.o       \
           $(BLD_DIR)/test_timers.o     \
           $(BLD_DIR)/test_speed.o      \
           $(BLD_DIR)/test_msgs.o       \

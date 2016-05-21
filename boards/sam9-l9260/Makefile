@@ -1,6 +1,6 @@
 ##---------------------------------------------------------------------------##
 ## Akalon RTOS                                                               ##
-## Copyright (c) 2011-2015, Dasa Dahanayaka                                  ##
+## Copyright (c) 2011-2016, Dasa Dahanayaka                                  ##
 ## All rights reserved.                                                      ##
 ##                                                                           ##
 ## Usage of the works is permitted provided that this instrument is retained ##
@@ -37,6 +37,7 @@ COMPILE_DIRS = kernel            \
                modules/libs      \
                modules/stdio     \
                modules/tests     \
+               modules/net       \
                devices           
 
 
@@ -71,7 +72,7 @@ $(BLD_DIR):
 
 ifneq ($(DIR),)
 include $(BASE_DIR)/$(DIR)/src_list
-VPATH = $(BASE_DIR)/inc:$(BASE_DIR)/$(DIR):
+VPATH = $(BASE_DIR)/inc:$(BASE_DIR)/$(DIR):$(BASE_DIR)/boards:
 IPATH = -I$(BASE_DIR)/inc -I$(BASE_DIR)/$(DIR)
 endif
 
@@ -86,7 +87,7 @@ lib_bld: echo_dir $(OBJS)
 ##########################
 
 ## Tool Info
-TOOL_DIR = /Set_Your_Base_Here/codesourcery-armgcc-2008q1/bin
+TOOL_DIR = /Set_Your_Tool_Base_Here/codesourcery-armgcc-2008q1/bin
 CC       = $(TOOL_DIR)/arm-none-eabi-gcc
 AR       = $(TOOL_DIR)/arm-none-eabi-ar
 AS       = $(TOOL_DIR)/arm-none-eabi-gcc

@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------*/
 /* Akalon RTOS                                                               */
-/* Copyright (c) 2011-2015, Dasa Dahanayaka                                  */
+/* Copyright (c) 2011-2016, Dasa Dahanayaka                                  */
 /* All rights reserved.                                                      */
 /*                                                                           */
 /* Usage of the works is permitted provided that this instrument is retained */
@@ -13,7 +13,7 @@
 
 /*---------------------------------------------------------------------------*/
 /*                                                                           */
-/* File Name       : stdio_main.c                                            */
+/* File Name       : stdio_init.c                                            */
 /* Description     : Standard Input/Output Module                            */
 /* Notes           :                                                         */
 /*                                                                           */

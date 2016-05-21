@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------*/
 /* Akalon RTOS                                                               */
-/* Copyright (c) 2011-2015, Dasa Dahanayaka                                  */
+/* Copyright (c) 2011-2016, Dasa Dahanayaka                                  */
 /* All rights reserved.                                                      */
 /*                                                                           */
 /* Usage of the works is permitted provided that this instrument is retained */
@@ -13,8 +13,8 @@
 
 /*---------------------------------------------------------------------------*/
 /*                                                                           */
-/* File Name       : net_main.c                                              */
-/* Description     : Network Stack                                           */
+/* File Name       : net_init.c                                              */
+/* Description     : Network stack entry point and task                      */
 /* Notes           :                                                         */
 /*                                                                           */
 /*---------------------------------------------------------------------------*/
@@ -25,6 +25,13 @@
 #include "net_priv.h"
 
 
+net_inst_t  tmp_inst ;
+link_t      net_link ;
+
+
+u8   buf [128] ;
+
+
 
 /*---------------------------------------------------------------------------*/
 /*                                                                           */
@@ -33,12 +40,56 @@
 /* Notes           :                                                         */
 /*                                                                           */
 /*---------------------------------------------------------------------------*/
-void     net_task (void)
+void     net_task  (usys arg0)
 {
-    printf ("ERR: net_task() is not Implemented !!!\n") ;
+    eth_hdr_t      *eth_pkt   ;
+    net_inst_t     *net_inst  ;
+    usys           stat, size ;
 
-    while (1)
-      task_delay (-1) ;
+
+    net_inst = (net_inst_t *) arg0 ;
+
+    /* Initialize the ARP Unit */
+    if ((stat = arp_init (net_inst)) != GOOD)
+    {
+       printf("ERR: (NET) arp_init(). Stat = 0x%x\n", stat) ;
+       /* <-- DO */
+    }
+
+
+    for (;;)
+    {
+       if (net_link.le_rx != NULL)
+	  if (net_link.le_rx (WAIT_FOREVER, 128, buf, &size) == GOOD)
+	  {
+	     /* Process frames that's only for us and broadcast frames */
+	     if (((buf[0] != 0xff) && (buf[0] != net_inst->mac[0])) ||
+                 ((buf[1] != 0xff) && (buf[1] != net_inst->mac[1])) || 
+                 ((buf[2] != 0xff) && (buf[2] != net_inst->mac[2])) || 
+                 ((buf[3] != 0xff) && (buf[3] != net_inst->mac[3])) || 
+                 ((buf[4] != 0xff) && (buf[4] != net_inst->mac[4])) || 
+                 ((buf[5] != 0xff) && (buf[5] != net_inst->mac[5])))
+	        continue ;
+
+	     eth_pkt = (eth_hdr_t *) buf ;
+
+	     switch (ntohs(eth_pkt->eth_type))
+	     {
+	        case ETH_TYPE_IPV4:
+                     ipv4_pkt_rx (net_inst, buf) ;
+		     break ;
+
+	        case ETH_TYPE_ARP:
+                     arp_pkt_rx (net_inst, buf) ;
+		     break ;
+
+	        default :
+                     printf ("Unknown Type 0x%x\n",ntohs(eth_pkt->eth_type)) ;
+		     break ;
+	     }
+	  }
+    } /* forever loop */
+
 } /* End of Function net_task () */
 
 
@@ -50,60 +101,50 @@ void     net_task (void)
 /* Notes           :                                                         */
 /*                                                                           */
 /*---------------------------------------------------------------------------*/
-usys     net_init (void *data)
+usys     net_init (void)
 {
-    usys stat ;
-    usys id ;
+    usys id, stat ;
+    net_inst_t *net_inst ;
+
+    net_inst = &tmp_inst ;
+
+    /* Initialize the netif_t structure */
+    memset (net_inst, 0, sizeof (net_inst_t)) ;
+    net_inst->mac [0] = 0x90 ;
+    net_inst->mac [1] = 0xe6 ;
+    net_inst->mac [2] = 0xba ;
+    net_inst->mac [3] = 0x46 ;
+    net_inst->mac [4] = 0x67 ;
+    net_inst->mac [5] = 0x89 ;
+
+    net_inst->ip_addr = htonl(0xc0a8010a) ; /* 192.168.1.10 */
 
     /* Initialize the Network Buffers */
-    if ((stat = net_buf_init()) != GOOD)
+    if ((stat = net_buf_init(net_inst)) != GOOD)
     {
        printf("ERR: (NET) net_buf_init(). Stat %d\n", stat) ;
        goto err ;
     }
 
-    /* Initialize Ethernet */
-    if ((stat = ether_init()) != GOOD)
-    {
-       printf("ERR: (NET) ether_init(). Stat %d\n", stat) ;
-       goto err ;
-    }
-
-    /* Initialize IPV4 */
-    if ((stat = ipv4_init()) != GOOD)
-    {
-       printf("ERR: (NET) ipv4_init(). Stat %d\n", stat) ;
-       goto err ;
-    }
-
-    /* Initialize UDP */
-    if ((stat = udp_init()) != GOOD)
-    {
-       printf("ERR: (NET) udp_init(). Stat %d\n", stat) ;
-       goto err ;
-    }
-
-    /* Initialize TCP */
-    if ((stat = tcp_init()) != GOOD)
-    {
-       printf("ERR: (NET) tcp_init(). Stat %d\n", stat) ;
-       goto err ;
-    }
-
-    /* Create the Network Input Task...*/
-    stat = task_new (1, 0, 8192, 0,0, net_task, 0,0,0, "net_task", &id) ;
+    /* Create the Network Task...*/
+    stat = task_new (110, 0, 8192, 0,0, net_task, 
+                     (usys) net_inst,0,0, 
+                     "net_task", &id) ;
     if (stat != GOOD)
     {
        printf("ERR: (NET) Creating net_task. Stat %d\n", stat) ;
        return BAD ;
     } 
 
+    /* Initialize the link */
+    memset (&net_link, 0, sizeof (link_t)) ;
+
     return GOOD ;
 
  err:
-    /* Release Buffers <-- DO */
-
+    /* <-- DO */
     return BAD ; 
+
 } /* End of function net_init() */
 
 

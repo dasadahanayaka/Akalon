@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------*/
 /* Akalon RTOS                                                               */
-/* Copyright (c) 2011-2015, Dasa Dahanayaka                                  */
+/* Copyright (c) 2011-2016, Dasa Dahanayaka                                  */
 /* All rights reserved.                                                      */
 /*                                                                           */
 /* Usage of the works is permitted provided that this instrument is retained */
@@ -24,7 +24,7 @@
 #include <stdio.h>
 
 
-extern   usys  bss_start[], bss_end[] ;
+extern   u8   bss_start[], bss_end[] ;
 
 
 /*---------------------------------------------------------------------------*/
@@ -36,7 +36,8 @@ extern   usys  bss_start[], bss_end[] ;
 /*---------------------------------------------------------------------------*/
 void     bsp_pre_init (usys mem_start, usys mem_size)
 {
-    usys  *tmp, stat ;
+    u8    *tmp ;
+    usys  stat ;
 
     /* Initialize the BSS Section */
     tmp = bss_start ;

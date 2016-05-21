@@ -13,20 +13,18 @@
 
 /*---------------------------------------------------------------------------*/
 /*                                                                           */
-/* File Name       : test_main.c                                             */
+/* File Name       : test_init.c                                             */
 /* Description     : Kernel Test for Akalon                                  */
 /* Notes           :                                                         */
 /*                                                                           */
 /*---------------------------------------------------------------------------*/
 #include <akalon.h>
 #include <stdio.h>
-#include <string.h>
 
 extern   void      test_speed  (usys arg) ;
 extern   void      test_timers (usys arg) ;
 extern   void      test_msgs   (usys arg) ;
 extern   void      test_events (usys arg) ;
-
 
 static   usys      task1_id  ;
 static   usys      task2_id  ;

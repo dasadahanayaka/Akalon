@@ -32,4 +32,8 @@ extern   usys      cli_init   (void) ;
 extern   usys      stdio_init (void) ;
 extern   link_t    stdio_link ;
 
+/* Network Interface */
+extern   usys      net_init   (void) ;
+extern   link_t    net_link ;
+
 #endif   /* !MODULES_H */

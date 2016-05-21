@@ -54,6 +54,13 @@ usys     mod_init (void)
        stat = BAD ; 
     }
 #endif
+#ifdef   INCLUDE_NETWORK
+    if (net_init () != GOOD)
+    {
+       printf ("ERR: net_init() Failed !!!\n") ; 
+       stat = BAD ; 
+    }
+#endif
 
     return stat ;
 } /* End of function mod_init () */

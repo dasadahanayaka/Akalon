@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------*/
 /* Akalon RTOS                                                               */
-/* Copyright (c) 2011-2015, Dasa Dahanayaka                                  */
+/* Copyright (c) 2011-2016, Dasa Dahanayaka                                  */
 /* All rights reserved.                                                      */
 /*                                                                           */
 /* Usage of the works is permitted provided that this instrument is retained */
@@ -25,7 +25,8 @@
 
 extern   int       getchar        (void) ;
 extern   int       putchar        (int)  ;
-extern   int       dbg_putchar    (int)  ;
 extern   int       printf         (const char *format, ...) ;
+
+extern   void      dbg_putchar    (int)  ;
 
 #endif   /* ! STDIO_H */

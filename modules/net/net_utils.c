@@ -13,88 +13,70 @@
 
 /*---------------------------------------------------------------------------*/
 /*                                                                           */
-/* File Name       : bsp.c                                                   */
-/* Description     : BSP Code                                                */
+/* File Name       : net_utils.c                                             */
+/* Description     : Network stack utilities                                 */
 /* Notes           :                                                         */
 /*                                                                           */
 /*---------------------------------------------------------------------------*/
 #include <akalon.h>
-#include <stdio.h>
-
-#include "raspberry-pi.h"
-
-extern   u8        bss_start[], bss_end[] ;
-extern   link_t    uart_link ;
+#include "net_priv.h"
 
 
 /*---------------------------------------------------------------------------*/
 /*                                                                           */
-/* Function Name   : bsp_pre_init                                            */
-/* Description     : Entry point before the kernel is initialized.           */
+/* Function Name   : crc16_calc                                              */
+/* Description     : Calculate the 16-bit CRC the Driver                     */
 /* Notes           :                                                         */
 /*                                                                           */
 /*---------------------------------------------------------------------------*/
-void     bsp_pre_init (usys mem_start, usys mem_size)
+u16      crc16_calc (void *data, u16 len)
 {
-    u8    *tmp ;
-    usys  stat ;
+    u32  val32 = 0 ;
+    u16  tmp16 ;
+    u8   *tmp8 ;
+    usys i ;
 
-    /* Initialize the BSS Section */
-    tmp = bss_start ;
+    tmp8 = (u8 *) data ;
 
-    while (tmp != bss_end)
-      *tmp++ = 0 ;
+    for (i = 0; i < len; i += 2)
+    {
+       tmp16  = (*tmp8++) << 8 ;
+       tmp16 |= *tmp8++ ;
 
-    printf ("Initializing Akalon...\n") ;
+       val32 += tmp16 ;
+    }
 
-    /* Initialize the Kernel...*/
+    if (i != len)
+       val32 += *tmp8 ;
 
-    stat = os_init ((usys) bss_end, BSP_MEM_TOP) ; 
+    /* Add the residue */
+    val32 = (val32 >> 16) + (val32 & 0xffff) ;
 
-    /* os_init () will only return on an error. */
+    /* Check if the residue created more residue */
+    if (val32 & 0xffff0000)
+       val32 = (val32 >> 16) + (val32 & 0xffff) ;
 
-    printf ("Failed to Initialize Kernel. Status = %x\n", stat) ;
-    while (1) ;
+    return htons(val32) ;
 
-} /* End of function bsp_pre_init () */
+} /* End of function crc16_calc() */
+
 
 
 
 /*---------------------------------------------------------------------------*/
 /*                                                                           */
-/* Function Name   : bsp_post_init                                           */
-/* Description     : Entry point after the Kernel is initialized.            */
-/* Notes           : Called by the Idle Task.                                */
+/* Function Name   : pkt_send                                                */
+/* Description     : Send a Network Packet to the Driver                     */
+/* Notes           :                                                         */
 /*                                                                           */
 /*---------------------------------------------------------------------------*/
-void     bsp_post_init (void)
+usys     pkt_send (net_inst_t *net_inst, pkt_t *pkt, usys size) 
 {
-    volatile u32 *vec_loc ;
+    if (net_link.le_tx != NULL)
+       if (net_link.le_tx (DONT_WAIT, size, (u8 *) pkt) == GOOD)
+	  return GOOD ;
 
-    /* The irq vector (loc 0x8018) and the fiq vector (0x801c) got  */
-    /* wiped out by the function cpu_int_init(). Therefore, replace */
-    /* them. These values originally came from the linker when file */
-    /* boot.s was compiled. For some other reason, these values has */
-    /* to be written to 0x18 and 0x1c instead of 0x8018 and 0x801c. */
-
-    vec_loc = (volatile u32 *) 0x18 ;
-    *vec_loc = 0xe59ff018 ;
-
-    vec_loc = (volatile u32 *) 0x1c ;
-    *vec_loc = 0xe59ff018 ;
-
-    /* Initialize the devices */
-
-    if (dev_init() != GOOD)
-      printf ("ERR: dev_init() failed !!!\n") ;
-
-    /* Initialize the modules */
-    mod_init () ;
-
-    /* Module Links */
-    os_link (&stdio_link, &uart_link, &uart_link) ;
-
-} /* End of function bsp_post_init () */
-
+    return BAD ;
+} /* End of function pkt_send() */
 
 

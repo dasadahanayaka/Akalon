@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------*/
 /* Akalon RTOS                                                               */
-/* Copyright (c) 2011-2015, Dasa Dahanayaka                                  */
+/* Copyright (c) 2011-2016, Dasa Dahanayaka                                  */
 /* All rights reserved.                                                      */
 /*                                                                           */
 /* Usage of the works is permitted provided that this instrument is retained */
@@ -11,23 +11,14 @@
 /*                                                                           */
 /*---------------------------------------------------------------------------*/
 
-#include <akalon.h>
-#include "net_priv.h"
-
-
 /*---------------------------------------------------------------------------*/
 /*                                                                           */
-/* Function Name   : ether_init                                              */
-/* Description     :                                                         */
+/* File Name       : stddef.h                                                */
+/* Description     : Akalon's stddef C library Interface                     */
 /* Notes           :                                                         */
 /*                                                                           */
 /*---------------------------------------------------------------------------*/
-usys     ether_init (void)
-{
-    return GOOD ;
-} /* End of function ether_init () */
+#ifndef  STDDEF_H
+#define  STDDEF_H
 
-
-
-
-
+#endif   /* !STDDEF_H */

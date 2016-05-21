@@ -13,21 +13,18 @@
 
 /*---------------------------------------------------------------------------*/
 /*                                                                           */
-/* File Name       : string.h                                                */
-/* Description     : Akalon's string C library Interface                     */
+/* File Name       : config.h                                                */
+/* Description     : Configuration options for the Olimex SAM9-L9260         */
 /* Notes           :                                                         */
 /*                                                                           */
 /*---------------------------------------------------------------------------*/
-#ifndef  STRING_H
-#define  STRING_H
+#ifndef  CONFIG_H
+#define  CONFIG_H
 
-extern   int       memcmp   (const void *ptr1, const void *ptr2, size_t num) ;
-extern   void      *memcpy  (void *dst, const void *src, size_t size) ;
-extern   void      *memset  (void *dst, int value, size_t size) ;
+/* Modules */
+#define  INCLUDE_CLI
+#define  INCLUDE_STDIO
+#define  INCLUDE_TESTS
+#define  INCLUDE_NETWORK
 
-extern   size_t    strlen   (const char *str) ;
-extern   int       strcmp   (const char *str1, const char *str2) ;
-extern   char      *strncpy (char *dst, const char *src, size_t size) ;
-extern   char      *strcpy  (char *dst, const char *src) ;
-
-#endif   /* !STRING_H */
+#endif  /* ! CONFIG_H */

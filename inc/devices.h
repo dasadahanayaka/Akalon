@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------*/
 /* Akalon RTOS                                                               */
-/* Copyright (c) 2011-2015, Dasa Dahanayaka                                  */
+/* Copyright (c) 2011-2016, Dasa Dahanayaka                                  */
 /* All rights reserved.                                                      */
 /*                                                                           */
 /* Usage of the works is permitted provided that this instrument is retained */
@@ -50,6 +50,11 @@ extern   link_t    ns16550_link ;
 extern   usys      kbd_init       (void)   ;
 extern   void      kbd_isr        (u8 key) ;
 extern   link_t    kbd_link ;
+
+extern   usys      emac_init       (void)  ;
+extern   void      emac_isr        (void)  ;
+extern   link_t    emacs_link ;
+
 
 /* PCI Bus */      
 typedef  struct    pci_t

@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------*/
 /* Akalon RTOS                                                               */
-/* Copyright (c) 2011-2015, Dasa Dahanayaka                                  */
+/* Copyright (c) 2011-2016, Dasa Dahanayaka                                  */
 /* All rights reserved.                                                      */
 /*                                                                           */
 /* Usage of the works is permitted provided that this instrument is retained */
@@ -444,7 +444,7 @@ void     ns16550_isr (void)
 /*                                                                           */
 /* Function Name   : ns16550_init                                            */
 /* Description     : Initialization routine                                  */
-/* Notes           : Called after os_init()                                  */
+/* Notes           :                                                         */
 /*                                                                           */
 /*---------------------------------------------------------------------------*/
 usys     ns16550_init (ns16550_t *ptr)

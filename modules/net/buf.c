@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------*/
 /* Akalon RTOS                                                               */
-/* Copyright (c) 2011-2015, Dasa Dahanayaka                                  */
+/* Copyright (c) 2011-2016, Dasa Dahanayaka                                  */
 /* All rights reserved.                                                      */
 /*                                                                           */
 /* Usage of the works is permitted provided that this instrument is retained */
@@ -19,9 +19,12 @@
 /*                                                                           */
 /*---------------------------------------------------------------------------*/
 #include <akalon.h>
+#include <string.h>
+
 #include "net_priv.h"
 
-
+#define  PKT_SIZE  128
+u8  pkt [PKT_SIZE] ;
 
 /*---------------------------------------------------------------------------*/
 /*                                                                           */
@@ -30,10 +33,45 @@
 /* Notes           :                                                         */
 /*                                                                           */
 /*---------------------------------------------------------------------------*/
-usys     net_buf_init (void)
+usys     net_buf_init (net_inst_t *net_inst)
 {
     return GOOD ;
 } /* End of function net_buf_init () */
+
+
+
+/*---------------------------------------------------------------------------*/
+/*                                                                           */
+/* Function Name   : pkt_alloc                                               */
+/* Description     :                                                         */
+/* Notes           :                                                         */
+/*                                                                           */
+/*---------------------------------------------------------------------------*/
+pkt_t    *pkt_alloc (net_inst_t *net_inst)
+{
+    memset (&pkt, 0, PKT_SIZE) ;
+    return ((pkt_t *) &pkt) ;
+} /* End of function pkt_alloc () */
+
+
+
+/*---------------------------------------------------------------------------*/
+/*                                                                           */
+/* Function Name   : pkt_free                                                */
+/* Description     :                                                         */
+/* Notes           :                                                         */
+/*                                                                           */
+/*---------------------------------------------------------------------------*/
+void     pkt_free  (net_inst_t *net_inst, pkt_t *pkt)
+{
+} /* End of function pkt_free () */
+
+
+
+
+
+
+
 
 
 

@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------*/
 /* Akalon RTOS                                                               */
-/* Copyright (c) 2011-2015, Dasa Dahanayaka                                  */
+/* Copyright (c) 2011-2016, Dasa Dahanayaka                                  */
 /* All rights reserved.                                                      */
 /*                                                                           */
 /* Usage of the works is permitted provided that this instrument is retained */
@@ -19,7 +19,43 @@
 /*                                                                           */
 /*---------------------------------------------------------------------------*/
 #include <akalon.h>
-#include <string.h>
+
+
+/*---------------------------------------------------------------------------*/
+/*                                                                           */
+/* Function Name   : memcmp                                                  */
+/* Description     :                                                         */
+/* Notes           :                                                         */
+/*                                                                           */
+/*---------------------------------------------------------------------------*/
+int      memcmp (const void *ptr1, const void *ptr2, size_t num)
+{
+   u8    *p1, *p2 ;
+   usys  i ;
+
+   p1 = (u8 *) ptr1 ;
+   p2 = (u8 *) ptr2 ;
+
+   for (i = 0; i < num; i++)
+   {
+      if (*p1 == *p2)
+      {
+	 p1++ ;
+	 p2++ ;
+	 continue ;
+      } else {
+	 /* Not equal !!! */
+	 if (*p1 > *p2)
+	 {
+	    return 1  ;
+	 } else {
+	    return -1 ;
+	 }
+      }
+   }
+
+   return 0 ; /* Is equal */
+} /* End of function memcmp() */
 
 
 

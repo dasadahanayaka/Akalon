@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------*/
 /* Akalon RTOS                                                               */
-/* Copyright (c) 2011-2015, Dasa Dahanayaka                                  */
+/* Copyright (c) 2011-2016, Dasa Dahanayaka                                  */
 /* All rights reserved.                                                      */
 /*                                                                           */
 /* Usage of the works is permitted provided that this instrument is retained */
@@ -24,17 +24,16 @@
 #define  CPU_MAX_INTS        4   /* IRQ,FIQ,ABT,UND ?? <-- DO */
 #define  LITTLE_ENDIAN
 
+typedef  unsigned  char      u8        ;
+typedef            char      s8        ;
+typedef  unsigned  short     u16       ;
+typedef            short     s16       ;
+typedef  unsigned  int       u32       ;
+typedef            int       s32       ;
 
-typedef  unsigned  char      u8   ;
-typedef            char      s8   ;
-typedef  unsigned  short     u16  ;
-typedef            short     s16  ;
-typedef  unsigned  int       u32  ;
-typedef            int       s32  ;
+typedef  unsigned  int       usys      ;
+typedef            int       ssys      ;
 
-typedef  unsigned  int       usys ;
-typedef            int       ssys ;
-
-typedef  unsigned  int       size_t ;
+typedef  unsigned  int       size_t    ;
 
 #endif   /* !ARM_H */

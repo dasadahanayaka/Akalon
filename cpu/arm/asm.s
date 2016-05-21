@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------*/
 /* Akalon RTOS                                                               */
-/* Copyright (c) 2011-2015, Dasa Dahanayaka                                  */
+/* Copyright (c) 2011-2016, Dasa Dahanayaka                                  */
 /* All rights reserved.                                                      */
 /*                                                                           */
 /* Usage of the works is permitted provided that this instrument is retained */
@@ -202,14 +202,14 @@ irq_isr:
 
 /*---------------------------------------------------------------------------*/
 /*                                                                           */
-/* Function Name   : irq_isr                                                 */
+/* Function Name   : irq_vector                                              */
 /* Description     : Regular (IRQ) Interrupt Vector                          */
-/* Notes           : Clean up this function !!!                              */
+/* Notes           :                                                         */
 /*                                                                           */
 /*---------------------------------------------------------------------------*/
 .globl  irq_vector
 irq_vector:
-	ldr	pc, [pc, #-0xf20] 
+	ldr	pc, =irq_isr
 	nop
 	nop
 	nop

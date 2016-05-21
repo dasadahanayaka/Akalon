@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------*/
 /* Akalon RTOS                                                               */
-/* Copyright (c) 2011-2015, Dasa Dahanayaka                                  */
+/* Copyright (c) 2011-2016, Dasa Dahanayaka                                  */
 /* All rights reserved.                                                      */
 /*                                                                           */
 /* Usage of the works is permitted provided that this instrument is retained */
@@ -13,14 +13,14 @@
 
 /*---------------------------------------------------------------------------*/
 /*                                                                           */
-/* File Name       : cli.c                                                   */
+/* File Name       : cli_init.c                                              */
 /* Description     : Entry point for the Command Line Interface              */
 /* Notes           :                                                         */
 /*                                                                           */
 /*---------------------------------------------------------------------------*/
 #include <akalon.h>
-#include <stdio.h>
 #include <string.h>
+#include <stdio.h>
 #include <cli.h>
 
 extern   void v()  ;

@@ -1,6 +1,6 @@
 ##---------------------------------------------------------------------------##
 ## Akalon RTOS                                                               ##
-## Copyright (c) 2011-2015, Dasa Dahanayaka                                  ##
+## Copyright (c) 2011-2016, Dasa Dahanayaka                                  ##
 ## All rights reserved.                                                      ##
 ##                                                                           ##
 ## Usage of the works is permitted provided that this instrument is retained ##
@@ -20,9 +20,14 @@
 ##---------------------------------------------------------------------------##
 
 # Objects ...
-OBJS	= $(BLD_DIR)/buf.o        \
-          $(BLD_DIR)/ethernet.o   \
+OBJS	= $(BLD_DIR)/net_init.o   \
+          $(BLD_DIR)/buf.o        \
+          $(BLD_DIR)/net_utils.o  \
+          $(BLD_DIR)/eth.o        \
+          $(BLD_DIR)/arp.o        \
           $(BLD_DIR)/ipv4.o       \
-          $(BLD_DIR)/tcp.o        \
-          $(BLD_DIR)/udp.o        \
-          $(BLD_DIR)/net_main.o  
+          $(BLD_DIR)/icmp.o
+
+#          $(BLD_DIR)/tcp.o        \
+#          $(BLD_DIR)/udp.o        \
+

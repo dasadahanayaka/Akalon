@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------*/
 /* Akalon RTOS                                                               */
-/* Copyright (c) 2011-2015, Dasa Dahanayaka                                  */
+/* Copyright (c) 2011-2016, Dasa Dahanayaka                                  */
 /* All rights reserved.                                                      */
 /*                                                                           */
 /* Usage of the works is permitted provided that this instrument is retained */
@@ -77,8 +77,7 @@ void     pit_init (void)
 
 } /* End of function pit_init() */
 
-
-
+usys x = 0 ;
 /*---------------------------------------------------------------------------*/
 /*                                                                           */
 /* Function Name   : aic_isr                                                 */
@@ -91,24 +90,28 @@ void     aic_isr (void)
     volatile u32 *reg_addr, val ;
 
     /* Read the Interrupt Pending Register (AIC_IPR) */
-    reg_addr = (u32 *) 0xfffff10c ;
+    reg_addr = (volatile u32 *) 0xfffff10c ;
     val = *reg_addr ;
-
-    /* Clear the Interrupt */
-    reg_addr = (u32 *) 0xfffff128 ;
-    *reg_addr = val ;
 
     /* Check units connected to int 1 */
     if (val & 0x2)
     {
        clock_isr()  ;
        uart_isr()   ;
-    }
+    } 
+
+    if (val & 0x00200000)
+       emac_isr() ;
+
+    /* Clear the Interrupt */
+    reg_addr = (volatile u32 *) 0xfffff128 ;
+    *reg_addr = val ;
 
     /* Notify the end of interrupts...*/
     reg_addr  = (u32 *) 0xfffff130 ;
     *reg_addr = 0 ;
 
+    x ++ ;
 } /* End of function aic_isr() */
 
 
@@ -122,22 +125,17 @@ void     aic_isr (void)
 /*---------------------------------------------------------------------------*/
 void     aic_init (void)
 {
-    u32  *reg_addr, val ;
+    volatile u32  *reg_addr, val ;
 
     /* Connect and Enable the ISR */
     int_config (0, ENABLE, aic_isr) ;
 
+    /* Program the Source Vector Register for PID1 (clock and uart) */
+    reg_addr  = (volatile u32 *) 0xfffff084 ;
+    *reg_addr = (u32) irq_isr ;
 
-    /* The branch instruction that's usually at irq_vector() and */
-    /* fiq_vector, point to the actual isr. But a branch cannot  */
-    /* be more than 32MB. This creates a problem if the isr code */
-    /* is further away (specially in a u-boot loaded system).    */
-    /* To get around the issue, use the Interrupt Vector Addres  */
-    /* which is at 0xfffff100. BTW, this address is standard on  */
-    /* many ARM devices including the arm926ej-s on this card.   */
-
-    /* Program the Source Mode Register...*/
-    reg_addr  = (u32 *) 0xfffff084 ;
+    /* Program the Source Vector Register for PID21 (ethernet emac) */
+    reg_addr  = (volatile u32 *) 0xfffff0d4 ;
     *reg_addr = (u32) irq_isr ;
 
     /* Set/Enable the PIT Interrupt, which is or'd to the SYS */
@@ -145,16 +143,25 @@ void     aic_init (void)
     /* interrupt on the AIC. Also, the SYS interrupt goes to  */
     /* the processor as a regular interrupt.                  */
 
-    /* Set the AIC_SMR1 (Interrupt Source Mode Register)   */
+    /* Set the Interrupt Source Mode Registers */
 
-    val  = 0x47 ;  /* SRCTYPE = 2 (Positive Edge Triggered */
-                   /* PRIOR = 7 (Highest Priority)         */
-    reg_addr  = (u32 *) 0xfffff004 ;
+    /* Set the AIC_SMR1 */
+    reg_addr  = (volatile u32 *) 0xfffff004 ;
+    val       = 0x07 ;  /* SRCTYPE = None for internal devices  */
+                        /* PRIOR   = 7 (Highest Priority)       */
     *reg_addr = val ;
 
-    /* Enable the clock interrupt */
-    reg_addr  = (u32 *) 0xfffff120 ;
-    *reg_addr = 0x2 ;
+    /* Set the AIC_SMR21 */
+    reg_addr  = (volatile u32 *) 0xfffff054 ;
+    val       = 0x07 ;  /* SRCTYPE = None for internal devices  */
+                        /* PRIOR   = 7 (Higest Priority)        */
+    *reg_addr = val ;
+
+    /* Enable Interrupts by writing to the Enable Cmd Register (IECR) */
+    /* The interrupts that are enabled are the SYS (Clock, UART) and  */
+    /* the Ethernet Interurupt (PID21)                                */
+    reg_addr  = (volatile u32 *) 0xfffff120 ;
+    *reg_addr = 0x00200002 ;
 
 } /* End of function aic_init() */
 
@@ -179,6 +186,9 @@ usys     dev_init (void)
 
     /* Setup/Enable the Serial Port (i.e. debug serial port) */
     uart_init() ;
+
+    /* Setup/Enable the EMAC Network device */
+    emac_init() ;
 
     return GOOD ; 
 } /* End of function dev_init() */
