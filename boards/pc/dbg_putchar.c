@@ -68,7 +68,10 @@ void dbg_putchar (int c)
     *(video + (xpos + ypos * COLUMNS) * 2) = 0x00 & 0xFF;
     *(video + (xpos + ypos * COLUMNS) * 2 + 1) = ATTRIBUTE;
 
-    if ((c != '\n') && (c != '\r') && (c != 0x8))
+    if (c == '\r') 
+       return ;
+
+    if ((c != '\n') && (c != 0x8))
     {
        *(video + (xpos + ypos * COLUMNS) * 2) = c & 0xFF;
        *(video + (xpos + ypos * COLUMNS) * 2 + 1) = ATTRIBUTE;
@@ -110,15 +113,18 @@ void dbg_putchar (int c)
 /* Notes           :                                                         */
 /*                                                                           */
 /*---------------------------------------------------------------------------*/
-static   usys      ui_rx (usys type, usys buf_size, u8 *buf)
+static   usys      rx_func (usys arg, usys size, void *buf)
 {
+    u8 *tmp8 ;
     usys i ;
 
-    for (i = buf_size; i > 0; i--)
-      dbg_putchar ((int) *buf++) ;
+    tmp8 = (u8 *) buf ;
+
+    for (i = size; i > 0; i--)
+      dbg_putchar ((int) *tmp8++) ;
 
     return GOOD ;
-} /* End of function ui_rx() */
+} /* End of function rx_func() */
 
 
 
@@ -136,8 +142,7 @@ usys     B8000_init (void)
 
     /* Initialize the stdio interface structure */
     memset (&b8000_link, 0, sizeof (link_t)) ;
-
-    b8000_link.ui_rx = ui_rx ;
+    b8000_link.rx_func = rx_func ;
 
     return GOOD ;
 

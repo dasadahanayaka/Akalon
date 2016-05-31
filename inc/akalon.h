@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------*/
 /* Akalon RTOS                                                               */
-/* Copyright (c) 2011-2015, Dasa Dahanayaka                                  */
+/* Copyright (c) 2011-2016, Dasa Dahanayaka                                  */
 /* All rights reserved.                                                      */
 /*                                                                           */
 /* Usage of the works is permitted provided that this instrument is retained */
@@ -154,30 +154,18 @@ extern usys   int_config     (usys int_num, usys status, void (*isr)()) ;
 
 typedef  struct    link_t 
 {
-    /* Upper Layer - Internal */
+    /* Configuration functions and variables */
+    usys (*conf_func)    (usys cmd, void *arg0, void *arg1) ;
+    usys (*tx_conf_var)  (usys cmd, void *arg0, void *arg1) ;
+    usys (*rx_conf_var)  (usys cmd, void *arg0, void *arg1) ;
 
-    usys (*ui_tx)   (usys type, usys bufSize, u8 *buf, usys *retSize) ;
-    usys (*ui_rx)   (usys type, usys bufSize, u8 *buf) ;
-
-    /* Upper Layer - External */
-
-    usys (*ue_tx)   (usys type, usys bufSize, u8 *buf) ;
-    usys (*ue_rx)   (usys type, usys bufSize, u8 *buf, usys *retSize) ;
-
-    /* Lower Layer - Internal */
-
-    usys (*li_tx)   (usys type, usys bufSize, u8 *buf, usys *retSize) ;
-    usys (*li_rx)   (usys type, usys bufSize, u8 *buf) ;
-
-    /* Lower Layer - External */
-
-    usys (*le_tx)   (usys type, usys bufSize, u8 *buf) ;
-    usys (*le_rx)   (usys type, usys bufSize, u8 *buf, usys *retSize) ;
+    /* Data Transfer Function */
+    usys (*rx_func)      (usys arg, usys size, void *data)  ;  /* Implement */
+    usys (*tx_func)      (usys arg, usys size, void *data)  ;  /* Filled    */
 
 } link_t ;
 
-extern usys   os_link        (link_t *upper_link, link_t *lower_rx_link, 
-                              link_t *lower_tx_link) ;
+extern usys   os_link        (link_t *top, link_t *rx, link_t *tx) ;
 
 
 /*********************/
@@ -198,5 +186,7 @@ extern void   bsp_post_init  (void) ;
 #include "utils.h"
 #include "modules.h"
 #include "devices.h"
+#include "net.h"
+
 
 #endif   /* ! AKALON_H */

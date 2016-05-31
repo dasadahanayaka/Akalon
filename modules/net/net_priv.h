@@ -79,8 +79,13 @@ typedef  struct    ipv4_hdr_t
 
 typedef  struct    net_inst_t
 {
-    u8   mac [6]   ;
-    u32  ip_addr   ;
+    u8   mac [6]  ;
+    u32  ip_addr  ;
+
+    void (*buf_free_func) (usys, net_buf_t *) ;
+    usys buf_free_func_arg ; 
+
+    usys task_id  ;
 } net_inst_t ;
 
 typedef  void      *pkt_t ;
@@ -95,9 +100,9 @@ extern   void      pkt_free       (net_inst_t *net_inst, pkt_t *pkt) ;
 extern   usys      pkt_send       (net_inst_t *net_inst, pkt_t *pkt,
                                    usys size) ;
 
-extern   void      arp_pkt_rx     (net_inst_t *netif, void *buf) ;
-extern   void      ipv4_pkt_rx    (net_inst_t *netif, void *buf) ;
-extern   void      icmp_pkt_rx    (net_inst_t *netif, void *buf) ;
+extern   void      arp_pkt_rx     (net_inst_t *netif, net_buf_t *buf) ;
+extern   void      ipv4_pkt_rx    (net_inst_t *netif, net_buf_t *buf) ;
+extern   void      icmp_pkt_rx    (net_inst_t *netif, net_buf_t *buf) ;
 
 extern   usys      eth_hdr_init   (net_inst_t *net_inst, pkt_t *pkt,
                                    u8 *dst_mac, u16 eth_type) ;
@@ -109,7 +114,7 @@ extern   void      ipv4_hdr_init  (net_inst_t *net_inst,
 
 extern   u32       eth_crc_calc   (void *pkt, usys size) ;
 extern   u16       crc16_calc     (void *buf, u16 size) ;
-
+extern   void      dev_buf_free   (net_inst_t *inst, net_buf_t *buf) ;
 
 
 /* Net module configuration */
@@ -122,16 +127,6 @@ extern   u16       crc16_calc     (void *buf, u16 size) ;
 
 
 #if 0
-
-
-typedef  struct    buf_t 
-{
-    u8      *data  ;
-
-    struct  buf_t  *p_buf  ;
-    struct  buf_t  *n_buf  ;
-} buf_t  ;
-
 
 
 /*------------------------*/
@@ -147,10 +142,6 @@ typedef  struct    net_t
     void      *udp ;
     void      *tcp ;
 } net_t  ;
-
-extern   net_t     net ;
-
-
 
 extern   usys      ipv4_init      (void) ;
 extern   usys      tcp_init       (void) ;

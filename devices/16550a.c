@@ -46,8 +46,6 @@ typedef  struct    devT
     u8   rx_buf     [BUF_SIZE] ;
     usys rx_p       ; /* Producer */
     usys rx_c       ; /* Consumer */
-    usys rx_sem_loc ;
-    usys rx_sem     ;
 
     u8   tx_buf     [BUF_SIZE] ;
     usys tx_p       ; /* Producer */
@@ -240,50 +238,31 @@ static   usys      config_set (devT *dev, usys parity, usys stop_bits,
 
 /*---------------------------------------------------------------------------*/
 /*                                                                           */
-/* Function Name   : ui_tx                                                   */
-/* Description     : Output from the Serial Driver to above                  */
-/* Notes           : This is a Blocking Call                                 */
-/*                                                                           */
-/*---------------------------------------------------------------------------*/
-static   usys      ui_tx (usys type, usys bufSize, u8 *buf, usys *retSize)
-{
-    /* See if there is data. Otherwise, wait for it... */
-    if (sem_get (dev->rx_sem, WAIT_FOREVER) == GOOD)
-    {
-       *retSize = 1 ;
-       *buf = dev->rx_buf [dev->rx_c % BUF_SIZE] ;
-
-       /* If the Rx is shut down, then restart it */
-       if ((dev->rx_p % BUF_SIZE) == (dev->rx_c++ % BUF_SIZE))       
-          dev->reg_write (dev->base_addr + REG_IER, 
-                          dev->reg_read (dev->base_addr + REG_IER) | 0x1) ;
-
-       return GOOD ;
-    }
-
-    return BAD ;
-} /* End of function ui_tx() */
-
-
-
-/*---------------------------------------------------------------------------*/
-/*                                                                           */
 /* Function Name   : rx_task                                                 */
-/* Description     : Rx Task                                                 */
+/* Description     : Data from This Module -> Top Module                     */
 /* Notes           :                                                         */
 /*                                                                           */
 /*---------------------------------------------------------------------------*/
 static   void      rx_task (void)
 {
+    /* Enable the Receiver, ERR + Break */
+    dev->reg_write (dev->base_addr + REG_IER, 0x5) ;
+
     while (1) 
     {
        task_sleep() ;
 
-       /* Received character/s. Get caught up with the producer index */
-       while (dev->rx_sem_loc != dev->rx_p)
+       /* Get caught up to the producer */
+       while (dev->rx_c != dev->rx_p)
        {
-          sem_give (dev->rx_sem) ;
-          dev->rx_sem_loc++ ;
+	  if (ns16550_link.tx_func != NULL)
+             ns16550_link.tx_func (0,1, &dev->rx_buf [dev->rx_c % BUF_SIZE]) ;
+
+          /* If the Rx is shut down, then restart it */
+          if ((dev->rx_p % BUF_SIZE) == (dev->rx_c++ % BUF_SIZE))       
+              dev->reg_write (dev->base_addr + REG_IER, 
+                              dev->reg_read (dev->base_addr + REG_IER) | 0x1) ;
+
        }
     }
 
@@ -293,18 +272,18 @@ static   void      rx_task (void)
 
 /*---------------------------------------------------------------------------*/
 /*                                                                           */
-/* Function Name   : ui_rx                                                   */
-/* Description     : Input into the Serial Driver from above                 */
+/* Function Name   : rx_func                                                 */
+/* Description     : Data from Top Module -> This Moduleer                   */
 /* Notes           :                                                         */
 /*                                                                           */
 /*---------------------------------------------------------------------------*/
-static   usys      ui_rx (usys type, usys bufSize, u8 *buf)
+static   usys      rx_func (usys type, usys bufSize, void *buf)
 {
     if (sem_get (dev->tx_sem, WAIT_FOREVER) != GOOD)
        return BAD ;
 
     /* Store the data */
-    dev->tx_buf [dev->tx_p++ % BUF_SIZE] = *buf ;
+    dev->tx_buf [dev->tx_p++ % BUF_SIZE] = *(u8 *) buf ;
 
     /* If the Transmitter is off, then switch it back on */
     if ((dev->reg_read (dev->base_addr + REG_IER) & 0x2) == 0) 
@@ -313,7 +292,7 @@ static   usys      ui_rx (usys type, usys bufSize, u8 *buf)
 
     return GOOD ;
 
-} /* End of function ui_rx() */
+} /* End of function rx_func() */
 
 
 
@@ -475,8 +454,8 @@ usys     ns16550_init (ns16550_t *ptr)
 
     /* Initialize the Interface */
     memset (&ns16550_link, 0, sizeof (link_t)) ;
-    ns16550_link.ui_rx = ui_rx ;
-    ns16550_link.ui_tx = ui_tx ;
+    ns16550_link.rx_func = rx_func ;
+
 
     /*** Transmitter (Tx) ***/
 
@@ -520,21 +499,13 @@ usys     ns16550_init (ns16550_t *ptr)
        goto err ;
     }
 
-    /* Semaphore */
-    if (sem_new (BUF_SIZE, 0, "16550: rx_sem", &dev->rx_sem) != GOOD)
-       goto err ;
-
     /* Indexes */
-    dev->rx_p = dev->rx_c = dev->rx_sem_loc = 0 ;
+    dev->rx_p = dev->rx_c = 0 ;
 
     /* For the PC, the !OUT2 pin needs to be enabled because it's gated */
     /* with the interrupt pin. Otherwise no interrupts are generated.   */
 
     dev->reg_write (dev->base_addr + REG_MCR, 0x0b) ;
-
-    /* Enable the Receiver, ERR + Break */
-
-    dev->reg_write (dev->base_addr + REG_IER, 0x5) ;
 
     return GOOD ;
 

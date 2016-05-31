@@ -36,39 +36,49 @@
 #define  EMAC_SA1B     0xfffc4098
 #define  EMAC_SA1U     0xfffc409c
 
-#define  RX_TASK_PRIORITY    100
-#define  RX_TASK_STACK_SIZE  0x1000
-#define  NUM_BUFS            1024
-#define  RX_BUF_SIZE         128
-#define  TX_BUF_SIZE         2048
+#define  RX_TASK_PRIORITY     100
+#define  RX_TASK_STACK_SIZE   0x1000
+#define  NUM_BUFS             1024
+#define  RX_BUF_SIZE          128
+#define  TX_BUF_SIZE          2048
 
 
-typedef struct buf_desc_t
+typedef  struct dev_desc_t
 {
     u32  buf_addr ;
     u32  buf_stat ;
-} buf_desc_t ;
+} dev_desc_t ;
+
+
+typedef  struct dev_buf_t
+{
+    net_buf_t      net_buf    ;  /* Always the First Item */
+    dev_desc_t     *dev_desc  ;
+    usys           free       ;
+} dev_buf_t ;
+
 
 typedef struct dev_t
 {
     u8             mac[6]     ;
 
-    buf_desc_t     *rx_desc   ;
+    dev_desc_t     *rx_desc   ;
     u8             *rx_buf    ;
-    usys           rx_p_index ;
-    usys           rx_c_index ;
-    usys           rx_sem     ;
+    usys           rx_index   ;
 
-    buf_desc_t     *tx_desc   ;
+    dev_desc_t     *tx_desc   ;
     u8             *tx_buf    ;
     usys           tx_index   ;
 
     usys           rx_task    ;
 
+    dev_buf_t      *dev_bufs  ;
+    usys           buf_index  ;
+
 } dev_t ;
 
 
-static   dev_t        dev ;
+static   dev_t     dev ;
 link_t   emac_link ;
 
 
@@ -91,7 +101,7 @@ static usys   buf_init (dev_t *dev)
        goto err ;
     }
 
-    if ((dev->rx_desc = malloc (NUM_BUFS * sizeof (buf_desc_t))) == NULL)
+    if ((dev->rx_desc = malloc (NUM_BUFS * sizeof (dev_desc_t))) == NULL)
     {  printf ("ERR: buf_init() malloc failed on rx_buf_desc\n") ;
        goto err ;
     }
@@ -105,7 +115,7 @@ static usys   buf_init (dev_t *dev)
        dev->rx_desc[i].buf_stat  = 0 ;
     }
 
-    dev->rx_p_index = dev->rx_c_index = 0 ; /* Init Index */
+    dev->rx_index = 0 ; /* Init index */
 
     /* *** TX ***/
     /* malloc the tx buffer */
@@ -114,7 +124,7 @@ static usys   buf_init (dev_t *dev)
        goto err ;
     }
 
-    if ((dev->tx_desc = malloc (NUM_BUFS * sizeof (buf_desc_t))) == NULL)
+    if ((dev->tx_desc = malloc (NUM_BUFS * sizeof (dev_desc_t))) == NULL)
     {  printf ("ERR: buf_init() malloc failed on tx_buf_desc\n") ;
        goto err ;
     }
@@ -128,20 +138,40 @@ static usys   buf_init (dev_t *dev)
 
     dev->tx_index = 0 ; /* Init Index */
 
+    /* Allocate and initialize the net_bufs */
+
+    if ((dev->dev_bufs = malloc (NUM_BUFS * sizeof (dev_buf_t))) == NULL)
+    {  printf ("ERR: buf_init() malloc failed on dev_bufs \n") ;
+       goto err ;
+    }
+
+    for (i = 0; i < NUM_BUFS; i++)
+    {
+       dev->dev_bufs[i].free         = YES  ;
+       dev->dev_bufs[i].net_buf.size = 0    ;
+       dev->dev_bufs[i].net_buf.data = NULL ;
+       dev->dev_bufs[i].net_buf.next = NULL ;
+    }
+
+    dev->buf_index = 0 ;
+
     return GOOD ;
 
 err:
     if (dev->tx_desc != NULL)
        free (dev->tx_desc) ;
 
-    if (dev->rx_desc != NULL)
-       free (dev->rx_desc) ;
-
     if (dev->tx_buf != NULL)
        free (dev->tx_buf) ;
 
+    if (dev->rx_desc != NULL)
+       free (dev->rx_desc) ;
+
     if (dev->rx_buf != NULL)
        free (dev->rx_buf) ;
+
+    if (dev->dev_bufs != NULL)
+       free (dev->dev_bufs) ;
 
     return E_MEM ;
 
@@ -196,6 +226,26 @@ static   usys      dev_init(dev_t *dev)
 
 /*---------------------------------------------------------------------------*/
 /*                                                                           */
+/* Function Name   : dev_buf_free                                            */
+/* Description     : Free the Device Buffer                                  */
+/* Notes           :                                                         */
+/*                                                                           */
+/*---------------------------------------------------------------------------*/
+static   void      dev_buf_free (usys arg, net_buf_t *net_buf)
+{
+    dev_buf_t *dev_buf ;
+
+    dev_buf = (dev_buf_t *) net_buf ;
+
+    dev_buf->dev_desc->buf_addr &= 0xfffffffe ;
+    dev_buf->free = YES ;
+
+} /* End of function dev_buf_free() */
+
+
+
+/*---------------------------------------------------------------------------*/
+/*                                                                           */
 /* Function Name   : emac_rx_task                                            */
 /* Description     : The EMAC RX task                                        */
 /* Notes           :                                                         */
@@ -203,6 +253,9 @@ static   usys      dev_init(dev_t *dev)
 /*---------------------------------------------------------------------------*/
 void     emac_rx_task (usys arg0)
 {
+    dev_buf_t *dev_buf = NULL ;
+    net_buf_t *net_buf = NULL ;
+
     volatile u32   *reg, val ;
     dev_t *dev ;
 
@@ -223,16 +276,52 @@ void     emac_rx_task (usys arg0)
        /* Await the next Rx Interrupt */
        task_sleep() ;  
 
-       /* Parse through all of the new frames that have been received */
-       while (dev->rx_desc[dev->rx_p_index].buf_addr & 0x1)
+
+#if 0 /* What to do with this ? */
+       /* Check if the Start frame and End Frames are set */
+       if ((dev->rx_desc[dev->rx_index].buf_stat & 0xc000) != 0xc000)
        {
-	  /* Release the Semaphore */
-	  sem_give (dev->rx_sem) ;
+	  printf ("Start and End Bits are not Set !!!\n") ;
+	  return ; /* <-- DO */
+       }
+#endif
+
+
+       /* Parse through all of the new frames that have been received */
+       while (dev->rx_desc[dev->rx_index].buf_addr & 0x1)
+       {
+
+          /* Get the next available dev_buf */
+          if (dev->dev_bufs[dev->buf_index].free == YES)
+          {
+	     dev_buf = &dev->dev_bufs[dev->buf_index] ;
+             dev_buf->free = NO ;
+
+	     if (++dev->buf_index == NUM_BUFS)
+	        dev->buf_index = 0 ;
+          } else {
+	     /* Shit Creek */
+          }
+
+          /* Fill out the dev_buf struct */
+          dev_buf->dev_desc = &dev->rx_desc [dev->rx_index] ;
+
+          /* Fill out the net_buf struct */
+          net_buf = &dev_buf->net_buf ;
+          net_buf->size = dev->rx_desc [dev->rx_index].buf_stat & 0xfff ;
+
+          /* Point to the correct location of the data. Since */
+          /* the device set bit 0 to 1, it needs to be reset. */
+          net_buf->data = (void *) (dev->rx_desc [dev->rx_index].buf_addr &
+                                    0xfffffffe) ;
+
+          /* Send the Data to the net_task */
+          if (emac_link.tx_func != NULL)
+              emac_link.tx_func (0, sizeof (usys), &dev_buf->net_buf) ;
 
           /* Increment the index */
-          dev->rx_p_index++ ;
-          if (dev->rx_p_index == NUM_BUFS)
-             dev->rx_p_index = 0 ;
+          if (++dev->rx_index == NUM_BUFS)
+             dev->rx_index = 0 ;
 
        }
 
@@ -271,60 +360,12 @@ void     emac_isr (void)
 
 /*---------------------------------------------------------------------------*/
 /*                                                                           */
-/* Function Name   : ui_tx                                                   */
-/* Description     : Network Stack <- Device                                 */
-/* Notes           :                                                         */
-/*                                                                           */
-/*---------------------------------------------------------------------------*/
-static   usys     ui_tx (usys type, usys buf_size, u8 *buf, usys *ret_size)
-{
-    usys len ;
-
-#if 0 /* What to do with this ? */
-       /* Check if the Start frame and End Frames are set */
-       if ((dev->rx_desc[dev->rx_index].buf_stat & 0xc000) != 0xc000)
-       {
-	  printf ("Start and End Bits are not Set !!!\n") ;
-	  return ; /* <-- DO */
-       }
-#endif
-
-    /* Wait for a packet */
-    if (sem_get (dev.rx_sem, WAIT_FOREVER) == GOOD)
-    {
-       len = dev.rx_desc [dev.rx_c_index].buf_stat & 0xfff ;
- 
-       /* Mark the device buffer as free by resetting bit zero. This */
-       /* will also put it back to the correct buffer address for    */
-       /* memcpy()                                                   */
-
-       dev.rx_desc [dev.rx_c_index].buf_addr &= 0xfffffffe ;
-
-       /* Copy the packet */
-       memcpy (buf, (void *) dev.rx_desc [dev.rx_c_index].buf_addr, len) ;
-
-       *ret_size = len ;
-
-       dev.rx_c_index ++ ;
-       if (dev.rx_c_index == NUM_BUFS)
-	  dev.rx_c_index = 0 ;
-
-       return GOOD ;
-    } 
-
-    return BAD ;
-} /* End of function ui_tx() */
-
-
-
-/*---------------------------------------------------------------------------*/
-/*                                                                           */
-/* Function Name   : ui_rx                                                   */
+/* Function Name   : rx_func                                                 */
 /* Description     : Network Stack -> Device                                 */
 /* Notes           :                                                         */
 /*                                                                           */
 /*---------------------------------------------------------------------------*/
-static   usys      ui_rx (usys type, usys size, u8 *pkt)
+static   usys      rx_func (usys type, usys size, void *pkt)
 {
     volatile u32 *reg, val ;
     void   *buf ;
@@ -359,26 +400,32 @@ static   usys      ui_rx (usys type, usys size, u8 *pkt)
 
     return GOOD ;
 
-#if 0
-    dev_t  *dev ;
+} /* End of function rx_func() */
 
-    printf ("In send_data(): Struct = 0x%x\n", (usys) p) ;
-    printf ("  Payload  = 0x%x\n", (usys) p->payload) ;
-    printf ("  tot_len  = 0x%x\n", (usys) p->tot_len) ;
-    printf ("  len      = 0x%x\n", (usys) p->len) ;
 
-    dev = (dev_t *) netif->state ;
-    if (p->len == p->tot_len)
+
+/*---------------------------------------------------------------------------*/
+/*                                                                           */
+/* Function Name   : conf_func                                               */
+/* Description     : Function to configure this module                       */
+/* Notes           : Called by an upper module                               */
+/*                                                                           */
+/*---------------------------------------------------------------------------*/
+static   usys      conf_func (usys cmd, void *arg0, void *arg1)
+{
+    switch (cmd)
     {
+        case CMD_BUF_FREE_FUNC_GET:
+             *(usys (*)) arg0 = (usys) dev_buf_free ;
+             *(usys *)   arg1 = (usys) &dev ;
+	     break ;
 
-    } else {
-       printf ("Shit Send !!!\n") ;
+        default :
+	     return BAD ;
     }
 
-    return ERR_OK ;
-#endif
-
-} /* End of function ui_tx() */
+    return GOOD ;
+} /* End of function conf_func() */
 
 
 
@@ -396,16 +443,10 @@ usys     emac_init (void)
     /* Initialize the device structure */
     memset (&dev, 0, sizeof (dev_t)) ;
 
-    /* Initialize the link structure */
+    /* Zero out the link structure and initialize it */
     memset (&emac_link, 0, sizeof (link_t)) ;
-
-    emac_link.ui_tx = ui_tx ;
-    emac_link.ui_rx = ui_rx ;
-
-    /* Create Rx Semaphore */
-    if (sem_new (NUM_BUFS, 0, "EMAC Rx Sem", &dev.rx_sem) != GOOD)
-       return BAD ;
-
+    emac_link.conf_func = conf_func ;
+    emac_link.rx_func   = rx_func ;
 
     /* Initialize the device */
     dev.mac[0] = 0x90 ;

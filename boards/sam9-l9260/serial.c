@@ -26,7 +26,7 @@
 /* Configuration Start */
 
 #define  NUM_DEVS  2
-#define  BUF_SIZE  4096  /* WARNING: The hang bug here <-- DO */
+#define  BUF_SIZE  32
 
 /* Configuration End   */
 
@@ -46,15 +46,11 @@ typedef  struct    devT
     u8   rx_buf     [BUF_SIZE] ;
     usys rx_p       ; /* Producer */
     usys rx_c       ; /* Consumer */
-    usys rx_sem_loc ;
-    usys rx_sem     ;
 
     u8   tx_buf     [BUF_SIZE] ;
     usys tx_p       ; /* Producer */
     usys tx_c       ; /* Consumer */
-    usys tx_sem_loc ;
     usys tx_sem     ;
-    usys tx_size    ;
 
 } devT ;
 
@@ -66,58 +62,39 @@ static   usys   tx_task_id  ;
 link_t   uart_link ;
 
 
-/*---------------------------------------------------------------------------*/
-/*                                                                           */
-/* Function Name   : ui_tx                                                   */
-/* Description     : Output from the Serial Driver to above                  */
-/* Notes           : This is a Blocking Call                                 */
-/*                                                                           */
-/*---------------------------------------------------------------------------*/
-static   usys      ui_tx (usys type, usys bufSize, u8 *buf, usys *retSize)
-{
-    volatile u32 *reg ;
-
-    /* See if there is data. Otherwise, wait for it... */
-    if (sem_get (dev->rx_sem, WAIT_FOREVER) == GOOD)
-    {
-       *retSize = 1 ;
-       *buf = dev->rx_buf [dev->rx_c % BUF_SIZE] ;
-
-       /* If the Rx is shut down, then restart it */
-       if ((dev->rx_p % BUF_SIZE) == (dev->rx_c++ % BUF_SIZE))
-       {
-          reg  = (volatile u32 *) 0xFFFFF208 ;
-          *reg = 0x1 ;
-       }       
-
-       return GOOD ;
-    }
-
-    return BAD ;
-} /* End of function ui_tx() */
-
-
 
 /*---------------------------------------------------------------------------*/
 /*                                                                           */
 /* Function Name   : rx_task                                                 */
-/* Description     : Rx Task                                                 */
+/* Description     : Data from This Module -> Top Module                     */
 /* Notes           :                                                         */
 /*                                                                           */
 /*---------------------------------------------------------------------------*/
 static   void      rx_task (void)
 {
+    volatile u32 *reg ;
+
     while (1) 
     {
        task_sleep() ;
 
-       /* Received character/s. Get caught up with the producer index */
-       while (dev->rx_sem_loc != dev->rx_p)
+       /* Woken up by the ISR */
+
+       /* Start sending charcters to the module above */
+       while (dev->rx_c != dev->rx_p)
        {
-          sem_give (dev->rx_sem) ;
-          dev->rx_sem_loc++ ;
+	  /* Send the Data */
+	  if (uart_link.tx_func != NULL)
+             uart_link.tx_func (0, 1, &dev->rx_buf [dev->rx_c % BUF_SIZE]) ;
+
+          /* If the Rx is shut down, then restart it */
+          if ((dev->rx_p % BUF_SIZE) == (dev->rx_c++ % BUF_SIZE))
+          {
+             reg  = (volatile u32 *) 0xFFFFF208 ;
+             *reg = 0x1 ;
+          }       
        }
-    }
+    } /* while (1) */
 
 } /* End of function rx_task() */
 
@@ -125,12 +102,12 @@ static   void      rx_task (void)
 
 /*---------------------------------------------------------------------------*/
 /*                                                                           */
-/* Function Name   : ui_rx                                                   */
-/* Description     : Input into the Serial Driver from above                 */
+/* Function Name   : rx_func                                                 */
+/* Description     : Data from Top Module -> This Module                     */
 /* Notes           :                                                         */
 /*                                                                           */
 /*---------------------------------------------------------------------------*/
-static   usys      ui_rx (usys type, usys bufSize, u8 *buf)
+static   usys      rx_func (usys arg, usys size, void *buf)
 {
     volatile u32 *reg ;
 
@@ -138,16 +115,7 @@ static   usys      ui_rx (usys type, usys bufSize, u8 *buf)
        return BAD ;
 
     /* Store the data */
-    dev->tx_buf [dev->tx_p++ % BUF_SIZE] = *buf ;
-
-    /* If this is a new line, send a line feed char too...Damn Silly !!*/
-    if (*buf == '\n')
-    {
-       if (sem_get (dev->tx_sem, WAIT_FOREVER) != GOOD)
-          return BAD ;
-
-       dev->tx_buf [dev->tx_p++ % BUF_SIZE] = '\r' ;
-    }
+    dev->tx_buf [dev->tx_p++ % BUF_SIZE] = *(u8 *) buf ;
 
     /* If the Transmitter is off, then switch it back on */
     reg  = (volatile u32 *) 0xFFFFF210 ;
@@ -159,7 +127,7 @@ static   usys      ui_rx (usys type, usys bufSize, u8 *buf)
 
     return GOOD ;
 
-} /* End of function ui_rx() */
+} /* End of function rx_func() */
 
 
 
@@ -176,12 +144,10 @@ static   void      tx_task (void)
     {
        task_sleep() ;
 
-       /* Transmitted character/s. Get caught up with the producer index */
-       while (dev->tx_sem_loc != dev->tx_c)
-       {
-          sem_give (dev->tx_sem) ;
-          dev->tx_sem_loc ++ ;
-       }
+       /* Give back the Tx Semaphore, so if the rx_func is blocked, */
+       /* it can wake up...                                         */
+       sem_give (dev->tx_sem) ;
+
     }
 
 } /* End of function tx_task() */
@@ -207,7 +173,7 @@ void     uart_isr (void)
     /* Check the Tx */
     if (val & 0x2)
     {
-       /* Write data until the Producer Index */
+       /* Write one character */
        if (dev->tx_c != dev->tx_p)
        {
           /* Write Data to TX Register */
@@ -270,8 +236,7 @@ usys     uart_init (void)
 
     /* Initialize the Interface */
     memset (&uart_link, 0, sizeof (link_t)) ;
-    uart_link.ui_rx = ui_rx ;
-    uart_link.ui_tx = ui_tx ;
+    uart_link.rx_func = rx_func ;
 
     /*** Transmitter (Tx) ***/
 
@@ -289,7 +254,7 @@ usys     uart_init (void)
        goto err ;
 
     /* Indexes */
-    dev->tx_p = dev->tx_c = dev->tx_sem_loc = 0 ;
+    dev->tx_p = dev->tx_c = 0 ;
 
     /*** Receiver (Rx) ***/
 
@@ -302,12 +267,8 @@ usys     uart_init (void)
        goto err ;
     }
 
-    /* Semaphore */
-    if (sem_new (BUF_SIZE, 0, "uart: rx_sem", &dev->rx_sem) != GOOD)
-       goto err ;
-
     /* Indexes */
-    dev->rx_p = dev->rx_c = dev->rx_sem_loc = 0 ;
+    dev->rx_p = dev->rx_c = 0 ;
 
     /* Reset the Status Bits */
     reg = (volatile u32 *) (0xFFFFF200) ;

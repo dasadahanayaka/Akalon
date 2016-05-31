@@ -37,9 +37,7 @@ COMPILE_DIRS = kernel            \
                modules/libs      \
                modules/stdio     \
                modules/tests     \
-               modules/net       \
-               devices           
-
+               modules/net       
 
 
 ##################################################

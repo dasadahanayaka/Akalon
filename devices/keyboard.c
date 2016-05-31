@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------*/
 /* Akalon RTOS                                                               */
-/* Copyright (c) 2011-2015, Dasa Dahanayaka                                  */
+/* Copyright (c) 2011-2016, Dasa Dahanayaka                                  */
 /* All rights reserved.                                                      */
 /*                                                                           */
 /* Usage of the works is permitted provided that this instrument is retained */
@@ -27,13 +27,9 @@ static   usys cap_lock  = NO ;
 static   usys cap_count = 0  ;
 
 static   usys task_id ;
-static   usys kbd_sem ;
 static   u8   key ;
 
 link_t   kbd_link ;
-
-
-
 
 
 /* US LShift = 42, RShift = 54, LCtrl = 29 */
@@ -130,27 +126,6 @@ usys     kbd_char_get (u8 key, u8 *ascii)
 
 /*---------------------------------------------------------------------------*/
 /*                                                                           */
-/* Function Name   : ui_tx                                                   */
-/* Description     : Upper Internal Tx Function                              */
-/* Notes           : Currently supports BLOCKING only !!!                    */
-/*                                                                           */
-/*---------------------------------------------------------------------------*/
-static   usys     ui_tx (usys type, usys buf_size, u8 *buf, usys *ret_size)
-{
-    if (sem_get (kbd_sem, WAIT_FOREVER) == GOOD)
-    {
-       *buf = key ;
-       *ret_size = 1 ;
-    }
-
-    return GOOD ;
-
-} /* End of function ui_tx() */
-
-
-
-/*---------------------------------------------------------------------------*/
-/*                                                                           */
 /* Function Name   : kbd_task                                                */
 /* Description     : Keyboard Task                                           */
 /* Notes           :                                                         */
@@ -161,10 +136,13 @@ void     kbd_task (void)
     while (1) 
     {
        task_sleep() ;
-       sem_give (kbd_sem) ;
+
+       if (kbd_link.tx_func != NULL)
+          kbd_link.tx_func (0,1,&key) ;
     }
 
 } /* End of function kbd_task() */
+
 
 
 /*---------------------------------------------------------------------------*/
@@ -197,7 +175,6 @@ usys     kbd_init (void)
 
     /* Initialize the stdio interface structure */
     memset (&kbd_link, 0, sizeof (link_t)) ;
-    kbd_link.ui_tx = ui_tx ;
 
     /* Create the Keyboard Task */
     stat = task_new (1, 0, 1024, 0,0, kbd_task, 0,0,0, "kbd_task", 
@@ -205,14 +182,6 @@ usys     kbd_init (void)
     if (stat != GOOD)
     {
        printf ("ERR: Creating kbd_task. Stat = %d\n", stat) ;
-       return BAD ;
-    }
-
-    /* Create the Keyboard Semaphore */
-    if ((stat = sem_new (1, 0, "KBD: sem", &kbd_sem)) != GOOD)
-    {
-       printf ("ERR: creating kbd_sem. Stat = %d\n", stat) ;
-       /* Delete the kbd_task <-- DO */
        return BAD ;
     }
 

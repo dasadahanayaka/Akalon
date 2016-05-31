@@ -48,16 +48,16 @@ typedef  struct    icmp_hdr_t
 /* Notes           :                                                         */
 /*                                                                           */
 /*---------------------------------------------------------------------------*/
-void     icmp_pkt_rx (net_inst_t *net_inst, void *buf)
+void     icmp_pkt_rx (net_inst_t *net_inst, net_buf_t *net_buf)
 {
     icmp_hdr_t *icmp_pkt_in, *icmp_pkt_out ;
     ipv4_hdr_t *ipv4_hdr_in, *ipv4_hdr_out ;
     eth_hdr_t  *eth_hdr_in ;
     pkt_t      *pkt ;
 
-    eth_hdr_in  = (eth_hdr_t *)  ((usys) buf)  ;
-    ipv4_hdr_in = (ipv4_hdr_t *) (((usys) buf) + ETH_HDR_SIZE) ;
-    icmp_pkt_in = (icmp_hdr_t *) (((usys) buf) + ETH_HDR_SIZE  + 
+    eth_hdr_in  = (eth_hdr_t *)   ((usys) net_buf->data) ;
+    ipv4_hdr_in = (ipv4_hdr_t *) (((usys) net_buf->data) + ETH_HDR_SIZE) ;
+    icmp_pkt_in = (icmp_hdr_t *) (((usys) net_buf->data) + ETH_HDR_SIZE  + 
                                   IPV4_HDR_SIZE) ;
 
     switch (icmp_pkt_in->type)

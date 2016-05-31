@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------*/
 /* Akalon RTOS                                                               */
-/* Copyright (c) 2011-2015, Dasa Dahanayaka                                  */
+/* Copyright (c) 2011-2016, Dasa Dahanayaka                                  */
 /* All rights reserved.                                                      */
 /*                                                                           */
 /* Usage of the works is permitted provided that this instrument is retained */
@@ -60,7 +60,6 @@ typedef  struct    devT
     usys rx_p       ; /* Producer */
     usys rx_c       ; /* Consumer */
     usys rx_sem     ;
-    usys rx_helper  ;
 
     usys tx_p       ; /* Producer */
     usys tx_c       ; /* Consumer */
@@ -71,32 +70,7 @@ static   devT   *dev = NULL ;
 static   usys   rx_task_id  ;
 static   usys   tx_task_id  ;
 
-
 link_t   uart_link ;
-
-
-/*---------------------------------------------------------------------------*/
-/*                                                                           */
-/* Function Name   : ui_tx                                                   */
-/* Description     : Output from the Serial Driver to above                  */
-/* Notes           : This is a Blocking Call                                 */
-/*                                                                           */
-/*---------------------------------------------------------------------------*/
-static   usys      ui_tx (usys type, usys bufSize, u8 *buf, usys *retSize)
-{
-    /* See if there is data. Otherwise, wait for it... */
-    if (sem_get (dev->rx_sem, WAIT_FOREVER) == GOOD)
-    {
-       *retSize = 1 ;
-       *buf = dev->rx_buf [dev->rx_c++ % BUF_SIZE] ;
-
-       return GOOD ;
-    }
-
-    return BAD ;
-
-} /* End of function ui_tx() */
-
 
 
 /*---------------------------------------------------------------------------*/
@@ -121,11 +95,11 @@ static   void      rx_task (void)
        /* Go to sleep. The ISR will wake us up */       
        task_sleep() ;
 
-       /* Update Rx Sempahore count for received characters */
-       while (dev->rx_helper != dev->rx_p)
+       while (dev->rx_c != dev->rx_p)
        {
-          sem_give (dev->rx_sem) ;
-	  dev->rx_helper++ ;
+          /* Send the Data */
+	  if (uart_link.tx_func != NULL)
+	     uart_link.tx_func (0, 1, &dev->rx_buf[dev->rx_c++ % BUF_SIZE]) ; 
        }
     }
 
@@ -135,19 +109,19 @@ static   void      rx_task (void)
 
 /*---------------------------------------------------------------------------*/
 /*                                                                           */
-/* Function Name   : ui_rx                                                   */
-/* Description     : Input into the Serial Driver from above                 */
+/* Function Name   : rx_func                                                 */
+/* Description     : Handles input from the module above                     */
 /* Notes           :                                                         */
 /*                                                                           */
 /*---------------------------------------------------------------------------*/
-static   usys      ui_rx (usys type, usys bufSize, u8 *buf)
+static   usys      rx_func (usys type, usys bufSize, void *buf)
 {
     volatile u32 *reg ;
     u32 val ;
 
     /* Send Data */
     reg  = (volatile u32 *) REG_DR ;
-    *reg = buf [0] ;
+    *reg = *(u8 *) buf ;
 
     /* Enable TX int */
     reg  = (volatile u32 *) REG_IMSC ;
@@ -160,7 +134,7 @@ static   usys      ui_rx (usys type, usys bufSize, u8 *buf)
 
     return GOOD ;
 
-} /* End of function ui_rx() */
+} /* End of function rx_func() */
 
 
 
@@ -271,8 +245,7 @@ usys     uart_init (void)
 
     /* Initialize the Interface */
     memset (&uart_link, 0, sizeof (link_t)) ;
-    uart_link.ui_rx = ui_rx ;
-    uart_link.ui_tx = ui_tx ;
+    uart_link.rx_func = rx_func ;
 
     /*** Transmitter (Tx) ***/
 
@@ -308,7 +281,7 @@ usys     uart_init (void)
        goto err ;
 
     /* Indexes */
-    dev->rx_p = dev->rx_c = dev->rx_helper = 0 ;
+    dev->rx_p = dev->rx_c = 0 ;
 
     /************************/
     /* Device Configuration */

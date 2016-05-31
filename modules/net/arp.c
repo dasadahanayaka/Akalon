@@ -109,14 +109,14 @@ void     update_arp_cache (arp_pkt_t *arp_pkt)
 /* Notes           :                                                         */
 /*                                                                           */
 /*---------------------------------------------------------------------------*/
-void     arp_pkt_rx (net_inst_t *net_inst, void *buf)
+void     arp_pkt_rx (net_inst_t *net_inst, net_buf_t *net_buf)
 {
     arp_pkt_t *arp_pkt_in, *arp_pkt_out ;
     pkt_t *pkt ;
     u32   crc, *tmp32 ;
 
     /* Get to the ARP Portion of the packet */
-    arp_pkt_in = (arp_pkt_t *) ( ((usys) buf) + ETH_HDR_SIZE ) ;
+    arp_pkt_in = (arp_pkt_t *) ( ((usys) net_buf->data) + ETH_HDR_SIZE ) ;
 
     /* Cache if it's an ARP reply */
     if ((ntohs(arp_pkt_in->oper) == 2) ||   /* Arp Reply pkt  */

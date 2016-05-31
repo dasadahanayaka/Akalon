@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------*/
 /* Akalon RTOS                                                               */
-/* Copyright (c) 2011-2015, Dasa Dahanayaka                                  */
+/* Copyright (c) 2011-2016, Dasa Dahanayaka                                  */
 /* All rights reserved.                                                      */
 /*                                                                           */
 /* Usage of the works is permitted provided that this instrument is retained */
@@ -15,13 +15,11 @@
 /*                                                                           */
 /* File Name       : link.c                                                  */
 /* Description     : Akalon Link Stacker functions                           */
-/* Notes           :                                                         */
+/* Notes           : Probably the hardest code in Akalon to understand !!!   */
 /*                                                                           */
 /*---------------------------------------------------------------------------*/
 #include <akalon.h>
-#include <stdio.h>
 
-#include "kernel.h"
 
 /*---------------------------------------------------------------------------*/
 /*                                                                           */
@@ -30,42 +28,37 @@
 /* Notes           :                                                         */
 /*                                                                           */
 /*---------------------------------------------------------------------------*/
-usys     os_link (link_t *uApp, link_t *lAppRx, link_t *lAppTx)
+usys     os_link   (link_t *top, link_t *rx, link_t *tx)
 {
-    if (uApp == NULL)
+    if (top == NULL)
        return BAD ;
 
     /** RX **/
-    if (lAppRx != NULL)
+    if (rx != NULL)
     {
-       /* Connect the Upper App's Lower External Rx function */
-       /* to the Lower App's Upper Internal Tx Interfaces.   */
+       /* Connect the Receiver Module's Tx function    */
+       /* variable to the Top Module's Rx function.    */
 
-       if (lAppRx->ui_tx != NULL)
-          uApp->le_rx = lAppRx->ui_tx ;
+       rx->tx_func = top->rx_func ;
 
-       /* Connect the Lower App's Upper External Tx function */
-       /* to the Upper App's Lower Internal Rx function      */
- 
-       if (uApp->li_rx != NULL)
-          lAppRx->ue_tx = uApp->li_rx ;
+       /* Connect the Top Module's external Rx config  */
+       /* variable to the Rx Module's config function. */
+
+       top->rx_conf_var = rx->conf_func ; 
     }
 
-
     /** TX **/
-    if (lAppTx != NULL) 
+    if (tx != NULL)
     {
-       /* Connect the Upper App's Lower External Tx function */
-       /* to the Lower App's Upper Internal Rx Interfaces.   */
+       /* Connect the Top Module's Tx function variable */
+       /* to the Transmit Module's Rx function          */
 
-       if (lAppTx->ui_rx != NULL)
-          uApp->le_tx = lAppTx->ui_rx ;
+       top->tx_func = tx->rx_func ; 
 
-       /* Connect the Lower App's Upper External Rx function */
-       /* to the Upper App's Lower Internal Tx function      */
+       /* Connect the Top Module's external Tx config   */
+       /* variable to the Tx Module's config function.  */
 
-       if (uApp->li_tx != NULL)
-          lAppTx->ue_rx = uApp->li_tx ;
+       top->tx_conf_var = tx->conf_func ;
     }
 
     return GOOD ;

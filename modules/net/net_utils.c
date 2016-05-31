@@ -62,7 +62,6 @@ u16      crc16_calc (void *data, u16 len)
 
 
 
-
 /*---------------------------------------------------------------------------*/
 /*                                                                           */
 /* Function Name   : pkt_send                                                */
@@ -72,11 +71,27 @@ u16      crc16_calc (void *data, u16 len)
 /*---------------------------------------------------------------------------*/
 usys     pkt_send (net_inst_t *net_inst, pkt_t *pkt, usys size) 
 {
-    if (net_link.le_tx != NULL)
-       if (net_link.le_tx (DONT_WAIT, size, (u8 *) pkt) == GOOD)
+    if (net_link.tx_func != NULL)
+       if (net_link.tx_func (DONT_WAIT, size, pkt) == GOOD)
 	  return GOOD ;
 
     return BAD ;
 } /* End of function pkt_send() */
 
 
+
+/*---------------------------------------------------------------------------*/
+/*                                                                           */
+/* Function Name   : dev_buf_free                                            */
+/* Description     : Release the device buffer                               */
+/* Notes           :                                                         */
+/*                                                                           */
+/*---------------------------------------------------------------------------*/
+void     dev_buf_free (net_inst_t *inst, net_buf_t *buf) 
+{
+    if (inst->buf_free_func == NULL)
+       return ;
+
+    inst->buf_free_func (inst->buf_free_func_arg, buf) ;
+
+} /* End of function dev_buf_free() */

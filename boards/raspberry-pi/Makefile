@@ -36,9 +36,7 @@ COMPILE_DIRS = kernel            \
                modules/cli       \
                modules/libs      \
                modules/stdio     \
-               modules/tests     \
-               devices           
-
+               modules/tests     
 
 
 ##################################################

@@ -59,11 +59,11 @@ void     ipv4_hdr_init (net_inst_t *net_inst, ipv4_hdr_t *ipv4_pkt,
 /* Notes           :                                                         */
 /*                                                                           */
 /*---------------------------------------------------------------------------*/
-void     ipv4_pkt_rx (net_inst_t *net_inst, void *buf)
+void     ipv4_pkt_rx (net_inst_t *net_inst, net_buf_t *net_buf)
 {
     ipv4_hdr_t *ipv4_hdr ;
 
-    ipv4_hdr = (ipv4_hdr_t *) (((usys) buf) + ETH_HDR_SIZE) ;
+    ipv4_hdr = (ipv4_hdr_t *) (((usys) net_buf->data) + ETH_HDR_SIZE) ;
 
     /* Check if the packet is for US */
     if (ipv4_hdr->dst != net_inst->ip_addr)
@@ -72,7 +72,7 @@ void     ipv4_pkt_rx (net_inst_t *net_inst, void *buf)
     switch (ipv4_hdr->protocol)
     {
        case IPV4_PROTOCOL_ICMP :
-            icmp_pkt_rx (net_inst, buf) ;
+            icmp_pkt_rx (net_inst, net_buf) ;
 	    break ;
  
        default :

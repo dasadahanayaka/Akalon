@@ -26,10 +26,10 @@
 
 link_t   stdio_link  ;
 
-static   u8    in_buf  [BUF_SIZE] ;
-static   usys  in_buf_sem ;
-static   usys  in_c  ; /* Consumer */
-static   usys  in_p  ; /* Producer */
+static   u8    rx_buf [BUF_SIZE] ;
+static   usys  rx_sem ;
+static   usys  rx_c   ; /* Consumer */
+static   usys  rx_p   ; /* Producer */
  
 static   usys  out_inited = NO ;
 static   u8    out_buf [BUF_SIZE] ;
@@ -55,9 +55,9 @@ int      getchar (void)
     int   val ;
 
     /* What if multiple tasks call getchar <-- DO */
-    if (sem_get (in_buf_sem, WAIT_FOREVER) == GOOD)
+    if (sem_get (rx_sem, WAIT_FOREVER) == GOOD)
     {
-       val = in_buf [in_c++ % BUF_SIZE] ;
+       val = rx_buf [rx_c++ % BUF_SIZE] ;
        return val ;
     }
 
@@ -69,31 +69,21 @@ int      getchar (void)
 
 /*---------------------------------------------------------------------------*/
 /*                                                                           */
-/* Function Name   : stdin_task                                              */
-/* Description     : Standard Input Task                                     */
+/* Function Name   : rx_func                                                 */
+/* Description     : stdio's receive function                                */
 /* Notes           :                                                         */
 /*                                                                           */
 /*---------------------------------------------------------------------------*/
-void      stdin_task (void)
+static   usys      rx_func (usys arg, usys size, void *data)
 {
-    usys retSize ;
-    u8   buf ;
-
-    for (;;)
+    if (sem_give (rx_sem) == GOOD)
     {
-       /* Wait for a Character to be available */
-       if (stdio_link.le_rx != NULL)
-       {
-          if (stdio_link.le_rx (LINK_BLOCK, 1, &buf, &retSize) == GOOD)
-             if (sem_give (in_buf_sem) == GOOD)
-                in_buf [in_p++ % BUF_SIZE] = buf ;
-       } else {
-	  printf ("ERR: stdio_task(). Link is NULL !!!\n") ;
-	  while (1) ;
-       }
+       rx_buf [rx_p++ % BUF_SIZE] = *(u8 *) data ;
+       return GOOD ;
     }
 
-} /* End of function stdin_task () */
+    return BAD ;
+} /* End of function rx_func() */
 
 
 
@@ -158,7 +148,7 @@ void      stdout_task (void)
 
     for (;;)
     {
-       /* Wait for a Character to be available */
+       /* Wait for a Slot to be available */
        if (sem_get (out_task_sem, WAIT_FOREVER) != GOOD)
        {
           /* <-- DO */
@@ -166,15 +156,16 @@ void      stdout_task (void)
 
        c = out_buf [out_c++ % BUF_SIZE] ;
 
-       if (stdio_link.le_tx != NULL)
+       /* Send data to the receiver module */
+       if (stdio_link.tx_func != NULL)
        {
-          stdio_link.le_tx (LINK_BLOCK, 1, &c) ;
+          stdio_link.tx_func (0, 1, &c) ;
 
 	  /* Follow a new line char with a begin line char */ 
           if (c == '\n')
-             stdio_link.le_tx (LINK_BLOCK, 1, &bl) ;
-
+             stdio_link.tx_func (0, 1, &bl) ;
        }
+
        sem_give (out_buf_sem) ;
     }
 
@@ -198,19 +189,10 @@ usys     stdio_init (void)
     /* Initialize Input */
     /********************/
 
-    /* STD-Input Task */
-    stat = task_new (2, 0, 1024, 0,0, stdin_task, 0,0,0, "stdin_task", &id) ;
-    if (stat != GOOD)
-    {
-       printf ("ERR: (STDIO) Creating stdin_task. Stat = %d\n", stat) ;
-       /* Graceful Exit <-- DO */
-       return BAD ;
-    }
-
     /* Create a counting semaphore (Full) */
     /* for the input buffer               */
 
-    stat = sem_new (BUF_SIZE, 0, "STDIO: in_buf_sem", &in_buf_sem) ;
+    stat = sem_new (BUF_SIZE, 0, "STDIO: in_buf_sem", &rx_sem) ;
     if (stat != GOOD)
     {
        printf ("ERR: (STDIO) Creating in_buf_sem. Stat = %d\n", stat) ;
@@ -218,7 +200,7 @@ usys     stdio_init (void)
        return BAD ;
     }
 
-    in_p = in_c = 0 ;
+    rx_p = rx_c = 0 ;
 
     /*********************/
     /* Initialize Output */
@@ -272,6 +254,7 @@ usys     stdio_init (void)
 
     /* Initialize the stdio interface structure */
     memset (&stdio_link, 0, sizeof (link_t)) ;
+    stdio_link.rx_func = rx_func ;
 
     return GOOD ;
 
