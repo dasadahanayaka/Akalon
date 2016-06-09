@@ -26,7 +26,7 @@
 /* Configuration Start */
 
 #define  NUM_DEVS  2
-#define  BUF_SIZE  32
+#define  BUF_SIZE  10
 
 /* Configuration End   */
 
@@ -50,6 +50,7 @@ typedef  struct    devT
     u8   tx_buf     [BUF_SIZE] ;
     usys tx_p       ; /* Producer */
     usys tx_c       ; /* Consumer */
+    usys tx_t       ; /* Temp - For Consumer Catchups */
     usys tx_sem     ;
 
 } devT ;
@@ -57,7 +58,6 @@ typedef  struct    devT
 static   devT   *dev = NULL ;
 static   usys   rx_task_id  ;
 static   usys   tx_task_id  ;
-
 
 link_t   uart_link ;
 
@@ -140,14 +140,19 @@ static   usys      rx_func (usys arg, usys size, void *buf)
 /*---------------------------------------------------------------------------*/
 static   void      tx_task (void)
 {
+    task_sleep() ;
+
     while (1) 
     {
+       /* Release all the slots that were sent out */
+       while (dev->tx_t <= dev->tx_c)
+       {  
+          sem_give (dev->tx_sem) ;
+	  dev->tx_t ++ ;
+       }
+
+       /* Wait for the ISR to wake us up */
        task_sleep() ;
-
-       /* Give back the Tx Semaphore, so if the rx_func is blocked, */
-       /* it can wake up...                                         */
-       sem_give (dev->tx_sem) ;
-
     }
 
 } /* End of function tx_task() */
@@ -164,14 +169,18 @@ static   void      tx_task (void)
 void     uart_isr (void)
 {
     volatile u32 *reg ;
-    u32 val ;
+    u32 mask_val, int_val ;
+
+    /* Read the Mask Register */
+    reg = (volatile u32 *) 0xFFFFF210 ;
+    mask_val = *reg ;
 
     /* Read the Status Register */
     reg = (volatile u32 *) 0xFFFFF214 ;
-    val = *reg ;
+    int_val = *reg ;
 
-    /* Check the Tx */
-    if (val & 0x2)
+    /* Check the Tx interrupt */
+    if ((mask_val & 0x2) && (int_val & 0x2))
     {
        /* Write one character */
        if (dev->tx_c != dev->tx_p)
@@ -182,7 +191,6 @@ void     uart_isr (void)
 
           /* Wake-up the Tx Task. It needs to release tx_sem */ 
           task_wake (tx_task_id) ;
-
        } else {
           /* Shut down the Transmitter */
           reg  = (volatile u32 *) 0xFFFFF20c ;
@@ -190,9 +198,8 @@ void     uart_isr (void)
        }
     }
 
-
     /* Check the Rx */
-    if (val & 0x1)
+    if ((mask_val & 0x1) && (int_val & 0x1))
     {
        /* Wake up the rx_task */
        task_wake (rx_task_id) ;
@@ -254,7 +261,7 @@ usys     uart_init (void)
        goto err ;
 
     /* Indexes */
-    dev->tx_p = dev->tx_c = 0 ;
+    dev->tx_p = dev->tx_c = dev->tx_t = 0 ;
 
     /*** Receiver (Rx) ***/
 

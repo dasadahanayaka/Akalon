@@ -22,23 +22,23 @@
 #include <string.h>
 #include <stdio.h>
 
-#define  BUF_SIZE  1024
+#define  BUF_SIZE  256
 
-link_t   stdio_link  ;
+link_t   stdio_link ;
 
-static   u8    rx_buf [BUF_SIZE] ;
-static   usys  rx_sem ;
-static   usys  rx_c   ; /* Consumer */
-static   usys  rx_p   ; /* Producer */
+static   u8    rx_buf  [BUF_SIZE] ;
+static   usys  rx_sem  ;
+static   usys  rx_c    ; /* Consumer */
+static   usys  rx_p    ; /* Producer */
  
-static   usys  out_inited = NO ;
-static   u8    out_buf [BUF_SIZE] ;
-static   usys  out_free_sem ;
-static   usys  out_buf_sem  ;
-static   usys  out_task_sem ;
+static   usys  tx_init = NO ;
+static   u8    tx_buf [BUF_SIZE] ;
+static   usys  tx_p ;
+static   usys  tx_c ;
+static   usys  tx_buf_sem  ;
+static   usys  tx_task_sem ;
 
-static   usys  out_c ;
-static   usys  out_p ;
+static   usys  putchar_sem ;
 
 
 
@@ -98,23 +98,24 @@ int      putchar (int c)
 {
     int bl = '\r' ;
 
-    if (out_inited == YES)
+    if (tx_init == YES)
     {
-       if (sem_get (out_buf_sem, WAIT_FOREVER) != GOOD)
+       /* Get a spot on the tx buffer */
+       if (sem_get (tx_buf_sem, WAIT_FOREVER) != GOOD)
           return EOF ;
 
        /* First take the buffer semaphore */
-       if (sem_get (out_free_sem, WAIT_FOREVER) != GOOD)
+       if (sem_get (putchar_sem, WAIT_FOREVER) != GOOD)
           return EOF ;
 
        /* Copy character into buffer */
-       out_buf [out_p++ % BUF_SIZE] = (u8) c ;
+       tx_buf [tx_p++ % BUF_SIZE] = (u8) c ;
 
        /* Give back the buffer semaphore */
-       sem_give (out_free_sem) ;
+       sem_give (putchar_sem) ;
 
-       /* Now give the rcv sem which will unblock the output task */
-       sem_give (out_task_sem) ;
+       /* Now wake up the stdout task */
+       sem_give (tx_task_sem) ;
 
     } else {
        /* The stdout is still not inited. Used the Debug out */
@@ -142,31 +143,39 @@ void      stdout_task (void)
 {
     u8    c, bl = '\r' ;
 
-    /* When the stdout_task is first run, make sure to take putchar */
-    /* out of the debug state and start using interrupts.           */
-    out_inited = YES ;
+    /* When stdout_task() is first run, make sure to take putchar() */
+    /* out of the debug state.                                      */
 
+    tx_init = YES ;
+
+    /* Get into a forever loop and handle all tx's */
     for (;;)
     {
-       /* Wait for a Slot to be available */
-       if (sem_get (out_task_sem, WAIT_FOREVER) != GOOD)
+       /* Wait to be woken up by putchar() */
+       if (sem_get (tx_task_sem, WAIT_FOREVER) != GOOD)
        {
           /* <-- DO */
        }
 
-       c = out_buf [out_c++ % BUF_SIZE] ;
-
-       /* Send data to the receiver module */
-       if (stdio_link.tx_func != NULL)
+       /* Send out all the data */
+       while (tx_p != tx_c)
        {
-          stdio_link.tx_func (0, 1, &c) ;
 
-	  /* Follow a new line char with a begin line char */ 
-          if (c == '\n')
-             stdio_link.tx_func (0, 1, &bl) ;
+          c = tx_buf [tx_c++ % BUF_SIZE] ;
+
+          /* Send data to the receiver module */
+          if (stdio_link.tx_func != NULL)
+          {
+             stdio_link.tx_func (0, 1, &c) ;
+
+	     /* Follow a new line char with a begin line char */ 
+             if (c == '\n')
+                stdio_link.tx_func (0, 1, &bl) ;
+          }
+
+	  /* Free the buffer spot */
+          sem_give (tx_buf_sem) ;
        }
-
-       sem_give (out_buf_sem) ;
     }
 
 } /* End of function stdout_task () */
@@ -185,29 +194,28 @@ usys     stdio_init (void)
     usys stat ;
     usys id ;
 
-    /********************/
-    /* Initialize Input */
-    /********************/
+    /*********/
+    /* Input */
+    /*********/
 
-    /* Create a counting semaphore (Full) */
-    /* for the input buffer               */
-
-    stat = sem_new (BUF_SIZE, 0, "STDIO: in_buf_sem", &rx_sem) ;
+    /* Create an empty counting semaphore of buffer size for the receiver */
+    stat = sem_new (BUF_SIZE, 0, "STDIO: rx_sem", &rx_sem) ;
     if (stat != GOOD)
     {
-       printf ("ERR: (STDIO) Creating in_buf_sem. Stat = %d\n", stat) ;
+       printf ("ERR: (STDIO) Creating rx_sem. Stat = %d\n", stat) ;
        /* Graceful Exit <-- DO */
        return BAD ;
     }
 
     rx_p = rx_c = 0 ;
 
-    /*********************/
-    /* Initialize Output */
-    /*********************/
+    /**********/
+    /* Output */
+    /**********/
 
     /* STD-Output Task */
-    stat = task_new (2, 0, 1024, 0,0, stdout_task, 0,0,0, "stdout_task", &id) ;
+    stat = task_new (2, 0, 1024, 0,0, stdout_task, 0,0,0, "stdout_task", 
+                     &id) ;
     if (stat != GOOD)
     {
        printf ("ERR: (STDIO) Creating stdout_task. Stat = %d\n", stat) ;
@@ -215,34 +223,26 @@ usys     stdio_init (void)
        return BAD ;
     }
 
-    /* Create a binary semaphore (Full) to protect */
-    /* the out_free variable                       */
-
-    stat = sem_new (1, 1, "STDIO: out_free_sem", &out_free_sem) ;
+    /* Create a full binary semaphore for putchar() */
+    stat = sem_new (1, 1, "STDIO: out_free_sem", &putchar_sem) ;
     if (stat != GOOD)
     {
-       printf ("ERR: (STDIO) Creating out_free_sem. Stat = %d\n", stat) ;
+       printf ("ERR: (STDIO) Creating putchar_sem. Stat = %d\n", stat) ;
        /* Graceful Exit <-- DO */
        return BAD ;
     }
 
-    /* Create a counting semaphore (Empty) to wake-up */
-    /* the Output Task when data is ready             */
-
-    stat = sem_new (BUF_SIZE, 0, "STDIO: out_task_sem",
-                    &out_task_sem) ;
-
+    /* Create a empty binary semaphore to wake-up the stdout_task() */
+    stat = sem_new (BUF_SIZE, 0, "STDIO: tx_task_sem", &tx_task_sem) ;
     if (stat != GOOD)
     {
-       printf ("ERR: Cannot Create STDIO: out_task_sem. Stat = %d\n", stat) ;
+       printf ("ERR: Cannot Create STDIO: tx_task_sem. Stat = %d\n", stat) ;
        /* Graceful Exit <-- DO */
        return BAD ;
     }
 
-    /* Create a counting semaphore (Full) that */
-    /* gives a slot in the output buffer       */
-
-    stat = sem_new (BUF_SIZE, BUF_SIZE, "STDIO: out_buf_sem", &out_buf_sem) ;
+    /* Create a full counting semaphore of buffer size for the transmitter */
+    stat = sem_new (BUF_SIZE, BUF_SIZE, "STDIO: tx_buf_sem", &tx_buf_sem) ;
     if (stat != GOOD)
     {
        printf ("ERR: (STDIO) Creating out_buf_sem. Stat = %d\n", stat) ;
@@ -250,7 +250,11 @@ usys     stdio_init (void)
        return BAD ;
     }
 
-    out_p = out_c = 0 ;
+    tx_p = tx_c = 0 ;
+
+    /*********/
+    /* Misc. */
+    /*********/
 
     /* Initialize the stdio interface structure */
     memset (&stdio_link, 0, sizeof (link_t)) ;

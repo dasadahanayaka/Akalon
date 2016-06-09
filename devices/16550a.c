@@ -273,7 +273,7 @@ static   void      rx_task (void)
 /*---------------------------------------------------------------------------*/
 /*                                                                           */
 /* Function Name   : rx_func                                                 */
-/* Description     : Data from Top Module -> This Moduleer                   */
+/* Description     : Data from Top Module -> This Module                     */
 /* Notes           :                                                         */
 /*                                                                           */
 /*---------------------------------------------------------------------------*/
