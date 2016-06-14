@@ -80,7 +80,11 @@ void     task_idle (void)
     /* to code will be stuck in the following while(1) loop.        */   
 
     cpu_enable_ints() ;
-    while (1) ;
+    while (1) 
+    {
+       /* Check if any task needs to be deleted */
+       task_cleanup() ;
+    }
     
 } /* End of function task_idle() */
 

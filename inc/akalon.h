@@ -14,7 +14,7 @@
 /*---------------------------------------------------------------------------*/
 /*                                                                           */
 /* File Name       : akalon.h                                                */
-/* Description     : Akalon's Interface                                      */
+/* Description     : Akalon's API                                            */
 /* Notes           :                                                         */
 /*                                                                           */
 /*---------------------------------------------------------------------------*/
@@ -155,13 +155,13 @@ extern usys   int_config     (usys int_num, usys status, void (*isr)()) ;
 typedef  struct    link_t 
 {
     /* Configuration functions and variables */
-    usys (*conf_func)    (usys cmd, void *arg0, void *arg1) ;
-    usys (*tx_conf_var)  (usys cmd, void *arg0, void *arg1) ;
-    usys (*rx_conf_var)  (usys cmd, void *arg0, void *arg1) ;
+    usys (*conf_func)   (usys cmd, void *arg0, void *arg1) ;
+    usys (*tx_conf)     (usys cmd, void *arg0, void *arg1) ;
+    usys (*rx_conf)     (usys cmd, void *arg0, void *arg1) ;
 
     /* Data Transfer Function */
-    usys (*rx_func)      (usys arg, usys size, void *data)  ;  /* Implement */
-    usys (*tx_func)      (usys arg, usys size, void *data)  ;  /* Filled    */
+    usys (*rx_func)     (usys arg, usys size, void *data)  ;  /* Implement */
+    usys (*tx_func)     (usys arg, usys size, void *data)  ;  /* Filled    */
 
 } link_t ;
 

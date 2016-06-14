@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------*/
 /* Akalon RTOS                                                               */
-/* Copyright (c) 2011-2015, Dasa Dahanayaka                                  */
+/* Copyright (c) 2011-2016, Dasa Dahanayaka                                  */
 /* All rights reserved.                                                      */
 /*                                                                           */
 /* Usage of the works is permitted provided that this instrument is retained */
@@ -26,6 +26,7 @@
 #define  TASK_SPINNING  2
 #define  TASK_READY     3
 #define  TASK_WAITING   4
+#define  TASK_DELETE    5
 
 
 /*----------------------*/
@@ -144,5 +145,6 @@ extern   void      task_rm_from_q      (tcb_t *task) ;
 extern   void      task_run_next       (tcb_t *current_task) ;
 extern   tcb_t     *task_ready_get     (void) ;
 extern   usys      task_awaiting       (usys id, tcb_t **task) ;
+extern   void      task_cleanup        (void) ;
 
 #endif  /* !KERNEL_H */

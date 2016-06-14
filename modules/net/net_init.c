@@ -75,8 +75,8 @@ void     net_task  (usys arg0)
     }
 
     /* Call the bottom module for configuration */
-    if (net_link.rx_conf_var != NULL)
-        net_link.rx_conf_var (CMD_BUF_FREE_FUNC_GET, 
+    if (net_link.rx_conf != NULL)
+        net_link.rx_conf (CMD_BUF_FREE_FUNC_GET, 
                               &net_inst->buf_free_func,
                               &net_inst->buf_free_func_arg) ;
 

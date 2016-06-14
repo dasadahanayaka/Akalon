@@ -21,6 +21,7 @@
 
 # Objects ...
 OBJS	= $(BLD_DIR)/test_init.o       \
+          $(BLD_DIR)/test_core.o       \
           $(BLD_DIR)/test_timers.o     \
           $(BLD_DIR)/test_speed.o      \
           $(BLD_DIR)/test_msgs.o       \

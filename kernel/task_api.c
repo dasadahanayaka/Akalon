@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------*/
 /* Akalon RTOS                                                               */
-/* Copyright (c) 2011-2015, Dasa Dahanayaka                                  */
+/* Copyright (c) 2011-2016, Dasa Dahanayaka                                  */
 /* All rights reserved.                                                      */
 /*                                                                           */
 /* Usage of the works is permitted provided that this instrument is retained */
@@ -133,6 +133,13 @@ usys     task_delete (usys id)
 
     if (tmp_task->id != id)
        return E_ID ;
+
+    /* Make sure the calling task is not the one getting deleted */
+    if (id == task_id_get())
+       return BAD ;
+
+    /* Mark the task for deletion. The kernel_task() will delete it */
+    tmp_task->state = TASK_DELETE ;
 
     return GOOD ;
 } /* End of function task_delete () */

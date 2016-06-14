@@ -21,6 +21,7 @@
 #include <akalon.h>
 #include <stdio.h>
 
+extern   void      test_core   (void) ;
 extern   void      test_speed  (usys arg) ;
 extern   void      test_timers (usys arg) ;
 extern   void      test_msgs   (usys arg) ;
@@ -122,6 +123,10 @@ usys     test_start (usys test_num, usys arg)
 
     switch (test_num)
     {
+       case 0:
+	    test_core () ;  
+	    return GOOD ;
+
        case 1:
 	    test_speed (arg) ;  
 	    return GOOD ;

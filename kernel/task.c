@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------*/
 /* Akalon RTOS                                                               */
-/* Copyright (c) 2011-2015, Dasa Dahanayaka                                  */
+/* Copyright (c) 2011-2016, Dasa Dahanayaka                                  */
 /* All rights reserved.                                                      */
 /*                                                                           */
 /* Usage of the works is permitted provided that this instrument is retained */
@@ -131,6 +131,8 @@ void     task_run_next (tcb_t *calling_task)
 /*---------------------------------------------------------------------------*/
 void     task_start (void (*func)(), usys arg0, usys arg1, usys arg2)
 {
+    tcb_t *this_task ;
+
     /* Do not enable interrupts when the idle task is first run */
     if (kernel.task_idle->func != func) 
        cpu_enable_ints() ;
@@ -138,9 +140,13 @@ void     task_start (void (*func)(), usys arg0, usys arg1, usys arg2)
     /* Call the Caller's Entry Point */
     func (arg0, arg1, arg2) ;
 
-    /* Handle a task exit <-- DO */
-    while (1)
-      printf ("ERR: You Cannot Exit the Task !!!\n") ;
+    /* Exit the Task...*/
+    cpu_disable_ints() ;
+
+    this_task = (tcb_t *) task_id_get() ;
+    this_task->state = TASK_DELETE ;
+
+    task_run_next (this_task) ;
 
 } /* End of function task_start() */
 
@@ -214,54 +220,6 @@ void     save_task_state (usys *stack_ptr)
     this_task->stack_ptr = stack_ptr  ;
 
 } /* End of function save_task_state() */
-
-
-
-/*---------------------------------------------------------------------------*/
-/*                                                                           */
-/* Function Name   : t                                                       */
-/* Description     : Prints all the tasks in the system                      */
-/* Notes           :                                                         */
-/*                                                                           */
-/*---------------------------------------------------------------------------*/
-void     t (void)
-{
-    tcb_t *task ;
-
-    printf ("\nname id priority stack state\n") ;
-
-    task = kernel.task_q ;
-
-    while (task != NULL)
-    {
-       printf("%s ", task->name) ;
-       printf("0x%x ", task->id) ;
-       printf("%d ", task->priority) ;
-       printf ("0x%x ",(usys) task->stack_ptr) ;
-       switch (task->state)
-       {
-          case 1 :
-	       printf ("Runnning") ;
-	       break ;  
-          case 2 :
-	       printf ("Spinning") ;
-	       break ;  
-          case 3 :
-	       printf ("Ready")    ;
-	       break ;  
-          case 4 :
-	       printf ("Waiting")  ;
-	       break ;
-          default:  
-	       printf ("Unknown 0x%x", task->state)  ;
-       }
-
-       printf ("\n") ;
-
-       task = task->nBlk ;
-    }
-
-} /* End of function t() */
 
 
 
@@ -386,6 +344,97 @@ void     task_rm_from_q (tcb_t *task)
     task->pBlk = NULL ;
 
 } /* End of function task_rm_from_q() */
+
+
+
+/*---------------------------------------------------------------------------*/
+/*                                                                           */
+/* Function Name   : task_cleanup                                            */
+/* Description     : Remove any task that's scheduled for deletion           */
+/* Notes           : Called by the kernel_task()                             */
+/*                                                                           */
+/*---------------------------------------------------------------------------*/
+void     task_cleanup (void)
+{
+    tcb_t *task_tmp ;
+
+    task_tmp = kernel.task_q ;
+
+    /* Parse the entire task_q */
+    while (task_tmp != NULL)
+    {
+       if (task_tmp->state == TASK_DELETE)
+       {
+	  /** Found a task that needs to be deleted !!! **/
+
+	  /* a) Stop Interrupts */
+	  cpu_disable_ints() ;
+
+	  /* b) Remove it from the task q */
+	  task_rm_from_q (task_tmp) ;
+
+	  /* c) Free up the memory */
+	  free (task_tmp) ;
+
+	  /* d) Re-enable Interrupts */
+	  cpu_enable_ints() ; 
+       }
+
+       task_tmp = task_tmp->nBlk ;
+    }
+
+} /* End of function task_cleanup() */
+
+
+
+/*---------------------------------------------------------------------------*/
+/*                                                                           */
+/* Function Name   : t                                                       */
+/* Description     : Prints all the tasks in the system                      */
+/* Notes           :                                                         */
+/*                                                                           */
+/*---------------------------------------------------------------------------*/
+void     t (void)
+{
+    tcb_t *task ;
+
+    printf ("\nname id priority stack state\n") ;
+
+    task = kernel.task_q ;
+
+    while (task != NULL)
+    {
+       printf("%s ", task->name) ;
+       printf("0x%x ", task->id) ;
+       printf("%d ", task->priority) ;
+       printf ("0x%x ",(usys) task->stack_ptr) ;
+       switch (task->state)
+       {
+          case 1 :
+	       printf ("Runnning") ;
+	       break ;  
+          case 2 :
+	       printf ("Spinning") ;
+	       break ;  
+          case 3 :
+	       printf ("Ready")    ;
+	       break ;  
+          case 4 :
+	       printf ("Waiting")  ;
+	       break ;
+          case 5 :
+	       printf ("Delete")  ;
+	       break ;
+          default:  
+	       printf ("Unknown 0x%x", task->state)  ;
+       }
+
+       printf ("\n") ;
+
+       task = task->nBlk ;
+    }
+
+} /* End of function t() */
 
 
 

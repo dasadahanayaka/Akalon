@@ -44,7 +44,7 @@ usys     os_link   (link_t *top, link_t *rx, link_t *tx)
        /* Connect the Top Module's external Rx config  */
        /* variable to the Rx Module's config function. */
 
-       top->rx_conf_var = rx->conf_func ; 
+       top->rx_conf = rx->conf_func ; 
     }
 
     /** TX **/
@@ -58,7 +58,7 @@ usys     os_link   (link_t *top, link_t *rx, link_t *tx)
        /* Connect the Top Module's external Tx config   */
        /* variable to the Tx Module's config function.  */
 
-       top->tx_conf_var = tx->conf_func ;
+       top->tx_conf = tx->conf_func ;
     }
 
     return GOOD ;
