@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------*/
 /* Akalon RTOS                                                               */
-/* Copyright (c) 2011-2015, Dasa Dahanayaka                                  */
+/* Copyright (c) 2011-2016, Dasa Dahanayaka                                  */
 /* All rights reserved.                                                      */
 /*                                                                           */
 /* Usage of the works is permitted provided that this instrument is retained */
@@ -30,20 +30,23 @@
 
 typedef  struct    msg_t
 {
-    usys id        ;
-    usys size      ;
-    void *loc      ;
+    usys      id        ;
+    usys      size      ;
+    void      *loc      ;
 } msg_t ;
 
-typedef  struct    mbox_t
+
+typedef  struct    msg_box_t
 {
-    usys  max_msgs  ;
-    usys  max_size  ;
-    usys  pIndex    ;     /* Producer */
-    usys  cIndex    ;     /* Consumer */
-    usys  pHaulted  ;
-    msg_t *msgs     ;
-} mbox_t ;
+    usys      max_msgs  ;
+    usys      max_size  ;
+
+    usys      num_msgs  ;
+    usys      p_index   ; /* Producer */
+    usys      c_index   ; /* Consumer */
+
+    msg_t     *msg_buf  ;
+} msg_box_t ;
 
 
 
@@ -56,46 +59,50 @@ typedef  struct    mbox_t
 /*---------------------------------------------------------------------------*/
 usys     msgbox_init (usys max_msgs, usys max_size, void **msg_box_loc)
 {
-    mbox_t *mbox = NULL ;
-    msg_t  *msgs = NULL ;
-    u8     *data = NULL ; 
-    usys   i ;
+    msg_box_t *msg_box = NULL ;
+    msg_t     *msg_buf = NULL ;
 
-    /* Alloc memory for the mbox_t, msgs_t's and the data */
-    mbox = malloc (sizeof(mbox_t)) ;
-    if (mbox == NULL)
-       return E_MEM ;
+    /* Allocate the mbox_t structure and initialize */
+    msg_box = malloc (sizeof(msg_box_t)) ;
+    if (msg_box == NULL)
+       goto err ;
 
+    msg_box->max_msgs = max_msgs ;
+    msg_box->max_size = max_size ;
+
+    msg_box->p_index  = 0 ;
+    msg_box->c_index  = 0 ;
+    msg_box->num_msgs = 0 ;
+
+
+    /* Send back the location of the mbox_t instance */
+    *msg_box_loc = msg_box ;
+
+    /* Allocate the msg buffer */
     if (max_msgs != 0)
     {
-       msgs = malloc (sizeof (msg_t) * max_msgs) ;
-       if (msgs == NULL)
-          return E_MEM ;
+       msg_buf = malloc ((max_msgs * sizeof (msg_t)) + 
+                         (max_msgs * max_size)) ; 
+       if (msg_buf == NULL)
+	  goto err ;
 
-       data = malloc (max_size * max_msgs) ;
-       if (data == NULL)
-          return E_MEM ;
-    }
+    } 
 
-    mbox->msgs = msgs ;
-
-    for (i = 0; i < max_msgs; i++)
-    {
-       mbox->msgs[i].loc = data ;
-       data += max_size ;
-    }
-
-    /* Initialize */
-    mbox->max_msgs  = max_msgs ;
-    mbox->max_size  = max_size ;
-    mbox->pIndex    = 0 ;
-    mbox->cIndex    = 0 ;
-    mbox->pHaulted  = NO ;
-
-    /* Send back the location */
-    *msg_box_loc = mbox ;
+    /* Connect the msg buffer to the mbox */
+    msg_box->msg_buf = msg_buf ;
 
     return GOOD ;
+
+err:
+    if (msg_box != NULL)
+       free (msg_box) ;
+
+    if (msg_buf != NULL)
+       free (msg_buf) ;
+
+    msg_box->msg_buf = NULL ;
+
+    return E_MEM ;
 
 } /* End of function msgbox_init () */
 
@@ -110,47 +117,45 @@ usys     msgbox_init (usys max_msgs, usys max_size, void **msg_box_loc)
 /*---------------------------------------------------------------------------*/
 usys     msg_get (usys *src_id, usys *size, void *loc, usys time_out)
 {
-    tcb_t  *this_task  ;
-    usys   stat = GOOD ;
-    mbox_t *msg_box ; 
+    msg_box_t *msg_box    ; 
+    msg_t     *msg        ;
+
+    tcb_t     *this_task  ;
+    usys      stat = GOOD ;
 
     this_task = (tcb_t *) task_id_get() ;
     msg_box   = this_task->msg_box ;  
 
-    os_pause() ;
+    os_pause() ; /* Make access atomic */
 
-    /* Check if mBox is empty. If it is, then depending on the  */
-    /* timeOut, take appropriate action.                        */
-
-    if ((msg_box->pIndex == msg_box->cIndex) && (msg_box->pHaulted == NO))
-    {  /* There are no messages... */  
+    /* Check if the msg box is empty */
+    if (msg_box->num_msgs == 0)
+    {  /* No Messages...*/
 
        if (time_out == DONT_WAIT)
        {
-          stat = E_RES ;
-          goto err ;
+	  stat = E_RES ;
+	  goto err ;
        }
 
-       /* Handle the time out...*/
-
-       this_task->time_out = NO ;
+       /* Handle Timeouts */
+       this_task->time_out     = NO ;
+       this_task->got_resource = NO ;
 
        if (time_out != WAIT_FOREVER)
-       {
+       {  
           /* Activate the Timer */
-
           this_task->time_count   = time_out ;
           this_task->timer_active = YES ;
        } 
 
-       this_task->got_resource = NO ;
-
-       /* Mark the calling task as "waiting" and run the next task */
-
+       /* Put the calling task into the TASK_WAITING state */
        this_task->state = TASK_WAITING ;
        task_run_next (this_task) ;
 
-       /* Check if we returned because of a timeout */
+       /* <-- The caller got re-started here */
+
+       /* Check why if it got re-started because the timer expired */
        if ((this_task->got_resource == NO) && (this_task->time_out == YES))
        {
           stat = E_TIMEOUT ;
@@ -158,25 +163,32 @@ usys     msg_get (usys *src_id, usys *size, void *loc, usys time_out)
        }
     }
 
-    /* Copy the message for the consumer */
+    /*---------------------------*/
+    /* Start copying the Message */
+    /*---------------------------*/
 
-    *src_id = msg_box->msgs [msg_box->cIndex].id   ;
-    *size   = msg_box->msgs [msg_box->cIndex].size ;
+    /* Calculate the Message Location */
+    msg = (msg_t *) ( ((usys) msg_box->msg_buf)              +
+                      (msg_box->c_index * sizeof (msg_t))    +
+                      (msg_box->c_index * msg_box->max_size)
+		    ) ;
 
-    memcpy (loc, msg_box->msgs [msg_box->cIndex].loc, 
-            msg_box->msgs [msg_box->cIndex].size) ;
+    *src_id = msg->id   ;
+    *size   = msg->size ;
 
-    /* Update the Consumer Index */
+    /* Copy data */
+    msg++ ; /* Message Data */
+    memcpy (loc, msg, *size) ;
 
-    msg_box->cIndex ++  ;
-    if (msg_box->cIndex == msg_box->max_msgs)
-       msg_box->cIndex = 0 ;
+    /* Update the next msg index */
+    if (++msg_box->c_index == msg_box->max_msgs)
+       msg_box->c_index = 0 ;
 
-    /* Unblock the producer if needed */
+    /* Update the number of messages received */
+    msg_box->num_msgs-- ;
 
-    if (msg_box->pHaulted == YES)
-       msg_box->pHaulted = NO ;
 
+    /* Get ready to return back to the caller */
 err:
     if (kernel.int_mode == NO)
        os_restart() ;
@@ -196,9 +208,10 @@ err:
 /*---------------------------------------------------------------------------*/
 usys     msg_send (usys dst_id, usys size, void *loc)
 {
-    tcb_t   *dst_task, *this_task ;
-    mbox_t  *dst_msg_box ;
-    usys    pIndex ;  
+    msg_box_t *dst_msg_box ;
+    msg_t     *msg ;
+    tcb_t     *this_task, *dst_task ;
+    usys stat = GOOD ;
 
     /* Check if the receiver's id is valid   */
     dst_task = (tcb_t *) dst_id ;
@@ -212,61 +225,65 @@ usys     msg_send (usys dst_id, usys size, void *loc)
     if (size > dst_msg_box->max_size)
        return E_VALUE ; 
 
-    os_pause() ;
+    os_pause() ; /* Make access atomic */
 
-    /* Check if the receiver's mBox is full */ 
-    if (dst_msg_box->pHaulted == YES)
+    /* Check if the receiver's msg_box is full */ 
+    if (dst_msg_box->max_msgs == dst_msg_box->num_msgs)
     {
-       if (kernel.int_mode == NO)
-          os_restart () ;
-        
-       return E_RES ;
+       stat = E_RES ;
+       goto err ;
     }
 
-    pIndex = dst_msg_box->pIndex ;
+    /*---------------------------*/
+    /* Start copying the Message */
+    /*---------------------------*/
 
-    /* Copy the Message from the producer */
+    /* Calculate the location to put the message */
+    msg = (msg_t *) ( ((usys) dst_msg_box->msg_buf) +
+                      (dst_msg_box->p_index * sizeof (msg_t)) +
+                      (dst_msg_box->p_index * dst_msg_box->max_size)
+                    ) ;
+
 
     this_task = (tcb_t *) task_id_get() ;
+    msg->id   = this_task->id ;
+    msg->size = size ;
 
-    dst_msg_box->msgs [pIndex].id   = this_task->id ;
-    dst_msg_box->msgs [pIndex].size = size ;    
-    memcpy (dst_msg_box->msgs [pIndex].loc, loc, size) ;
+    memcpy (++msg, loc, size) ;
 
-    /* Update the Producer Index */
+    /* Update the producer index */
+    if (++dst_msg_box->p_index == dst_msg_box->max_msgs)
+       dst_msg_box->p_index = 0 ; 
 
-    dst_msg_box->pIndex ++ ;
-    if (dst_msg_box->pIndex == dst_msg_box->max_msgs)
-       dst_msg_box->pIndex  = 0 ;
+    /* Update the number of messages received */
+    dst_msg_box->num_msgs++ ;
 
-    /* If the new index points to the consumer index, */
-    /* no more messages can be received.              */
-    
-    if (dst_msg_box->pIndex == dst_msg_box->cIndex)
-       dst_msg_box->pHaulted = YES ;
- 
-    /* Obviously, the receiver is ready to */
-    /* run because we just sent a message. */
+
+    /*----------------------------------*/
+    /* Handle the receiver task's state */
+    /*----------------------------------*/
 
     dst_task->got_resource = YES ;
-    dst_task->state = TASK_READY ;
+    dst_task->state = TASK_READY ; /* Obviously, the receiver is now ready */
 
-    /* Now check if the receiver needs to be run because */
-    /* it's priority is higher than the sender.          */
+    /* Now check if the receiver task is at a higher priority.   */
+    /* If it is, then switch to it and run it...                 */
 
     if (this_task->priority > dst_task->priority)
     {  
-       /* An immidiate switch is receiver is needed. Make */
-       /* the sender's state "ready" from "running"       */
+       /* An immidiate switch to the destination task is needed. */
       
        this_task->state = TASK_READY ;    
-       task_run_next (this_task) ;                          
+       task_run_next (this_task) ;      
+
+       /* <-- The caller got re-started here */                    
     }
 
+err:
     if (kernel.int_mode == NO)
        os_restart () ;
 
-    return GOOD ;
+    return stat ;
 
 } /* End of function msg_send() */
 
