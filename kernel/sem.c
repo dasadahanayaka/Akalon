@@ -1,6 +1,6 @@
 /*---------------------------------------------------------------------------*/
 /* Akalon RTOS                                                               */
-/* Copyright (c) 2011-2015, Dasa Dahanayaka                                  */
+/* Copyright (c) 2011-2016, Dasa Dahanayaka                                  */
 /* All rights reserved.                                                      */
 /*                                                                           */
 /* Usage of the works is permitted provided that this instrument is retained */
@@ -197,6 +197,7 @@ usys     sem_give (usys id)
           waiting_task->state        = TASK_READY ;
           waiting_task->timer_active = NO ;
           waiting_task->time_out     = NO ;
+          waiting_task->wait_id      = 0  ;
 
 	  /* ...and reduce the count_now value */
 	  sem->count_now -- ;
