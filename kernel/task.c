@@ -86,7 +86,7 @@ tcb_t    *task_ready_get (void)
     /* This while() loop should do the minimum of stuff... */
     while (task_tmp != NULL)
     {
-       if (task_tmp->state == TASK_READY) 
+       if (task_tmp->state == TASK_READY)
 	  return task_tmp ;
 
        task_tmp = task_tmp->nBlk ;
@@ -414,13 +414,13 @@ void     t (void)
 	       printf ("Runnning") ;
 	       break ;  
           case 2 :
-	       printf ("Spinning") ;
-	       break ;  
-          case 3 :
 	       printf ("Ready")    ;
 	       break ;  
-          case 4 :
+          case 3 :
 	       printf ("Waiting")  ;
+	       break ;
+          case 4 :
+	       printf ("Sleeping")  ;
 	       break ;
           case 5 :
 	       printf ("Delete")  ;

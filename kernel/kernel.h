@@ -23,9 +23,9 @@
 
 /* Task States */
 #define  TASK_RUNNING   1
-#define  TASK_SPINNING  2
-#define  TASK_READY     3
-#define  TASK_WAITING   4
+#define  TASK_READY     2
+#define  TASK_WAITING   3
+#define  TASK_SLEEPING  4
 #define  TASK_DELETE    5
 
 

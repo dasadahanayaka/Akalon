@@ -219,7 +219,7 @@ void     task_sleep (void)
     cpu_disable_ints() ;
 
     this_task->timer_active = NO ;
-    this_task->state = TASK_WAITING ;
+    this_task->state = TASK_SLEEPING ;
 
     task_run_next (this_task) ;
 
@@ -251,6 +251,8 @@ usys     task_wake (usys task_id)
     if (this_task->id == task_to_wake->id)
        return E_ID ;
 
+    if (task_to_wake->state != TASK_SLEEPING) 
+       return BAD  ;
 
     /* Wake the task by making it ready */
     task_to_wake->state = TASK_READY ;
