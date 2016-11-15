@@ -6,7 +6,7 @@
 /* Usage of the works is permitted provided that this instrument is retained */
 /* with the works, so that any entity that uses the works is notified of     */
 /* this instrument.                                                          */
-/*                                                                           */	
+/*                                                                           */
 /* DISCLAIMER: THE WORKS ARE WITHOUT WARRANTY.                               */
 /*                                                                           */
 /*---------------------------------------------------------------------------*/
@@ -39,7 +39,7 @@
 /*                                                                           */
 /*---------------------------------------------------------------------------*/
 usys     task_id_get (void)
-{  
+{
     usys   addr, size ;
     tcb_t  *task ;
 
@@ -51,7 +51,7 @@ usys     task_id_get (void)
        if (( ((usys) &addr) >= task->id) &&
            ( ((usys) &addr) < (task->id + size + task->stack_size)))
 	  return (task->id) ;
-   
+
        task = task->nBlk ;
     }
 

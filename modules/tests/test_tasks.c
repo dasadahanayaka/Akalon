@@ -1,20 +1,20 @@
 /*---------------------------------------------------------------------------*/
 /* Akalon RTOS                                                               */
-/* Copyright (c) 2011-2015, Dasa Dahanayaka                                  */
+/* Copyright (c) 2011-2016, Dasa Dahanayaka                                  */
 /* All rights reserved.                                                      */
 /*                                                                           */
 /* Usage of the works is permitted provided that this instrument is retained */
 /* with the works, so that any entity that uses the works is notified of     */
 /* this instrument.                                                          */
-/*                                                                           */	
+/*                                                                           */
 /* DISCLAIMER: THE WORKS ARE WITHOUT WARRANTY.                               */
 /*                                                                           */
 /*---------------------------------------------------------------------------*/
 
 /*---------------------------------------------------------------------------*/
 /*                                                                           */
-/* File Name       : test_events.c                                           */
-/* Description     : Akalon Event Test                                       */
+/* File Name       : test_tasks.c                                            */
+/* Description     : Akalon Task Test                                        */
 /* Notes           :                                                         */
 /*                                                                           */
 /*---------------------------------------------------------------------------*/
@@ -25,10 +25,20 @@
 
 static   usys  task1_id ;
 static   usys  task2_id ;
-static   usys  sem_id   ;
 
-
-
+#if 0
+/*---------------------------------------------------------------------------*/
+/*                                                                           */
+/* Function Name   : timer_func                                              */
+/* Description     : Entry Point for the Timer                               */
+/* Notes           : This is called from an interrupt context !!             */
+/*                                                                           */
+/*---------------------------------------------------------------------------*/
+static   void     timer_func (void)
+{
+    task_wake (task2_id) ;
+} /* End of function timer_func() */
+#endif
 
 
 /*---------------------------------------------------------------------------*/
@@ -40,18 +50,7 @@ static   usys  sem_id   ;
 /*---------------------------------------------------------------------------*/
 static   void      task1 (void)
 {
-    usys stat ;
-
-    while (1)
-    {
-       if ((stat = sem_get (sem_id, WAIT_FOREVER)) == GOOD)
-       {
-          printf ("Task 1: sem_get() Returned !!!\n") ;
-       } else {
-          printf ("ERR: Task 1 sem_get(). Stat %d\n", stat) ;
-       }
-    }
-
+    printf ("INF: In Task 1\n") ;
 } /* End of Function task1() */
 
 
@@ -65,44 +64,21 @@ static   void      task1 (void)
 /*---------------------------------------------------------------------------*/
 static   void      task2 (void)
 {
-    usys stat ;
-
-    while (1)
-    {
-       task_sleep() ; 
-
-       if ((stat = sem_give (sem_id)) != GOOD)
-          printf ("ERR: Task 2. sem_get(). Stat %d\n", stat) ;  
-    }
-
+    printf ("INF: In Task 2\n") ;
 } /* End of Function task2() */
 
 
 
 /*---------------------------------------------------------------------------*/
 /*                                                                           */
-/* Function Name   : timer_func                                              */
-/* Description     : Entry Point for the Timer                               */
-/* Notes           : This is called from an interrupt context !!             */
-/*                                                                           */
-/*---------------------------------------------------------------------------*/
-static   void     timer_func (void)
-{
-    task_wake (task2_id) ;
-} /* End of function timer_func() */
-
-
-
-/*---------------------------------------------------------------------------*/
-/*                                                                           */
-/* Function Name   : test_events                                             */
-/* Description     : Test Akalon Events                                      */
+/* Function Name   : test_tasks                                              */
+/* Description     : Test Akalon Task                                        */
 /* Notes           :                                                         */
 /*                                                                           */
 /*---------------------------------------------------------------------------*/
-usys     test_events (usys arg)
+usys     test_tasks (usys arg)
 {
-    usys timer_id, stat ; 
+    usys stat ;
 
     printf("Creating Task 1\n") ;
 
@@ -126,37 +102,8 @@ usys     test_events (usys arg)
        return BAD ;
     }
 
-    if ((stat = sem_new (1, 0, "Test Sem", &sem_id)) == GOOD)
-    {
-       printf("Created Sem (ID = %x)\n", sem_id) ;
-    } else {
-       printf("ERR: (TEST) Creating Semaphore. Stat %d\n", stat) ;
-       return BAD ;
-    }
-
-    /* Create the Timer */
-    stat = timer_new (10, TIMER_REPEAT, timer_func, "Test Timer",
-                      &timer_id) ;
-    if (stat == GOOD)
-    {
-       printf ("Created Timer (ID = %x)\n", timer_id) ;
-    } else {
-       printf ("ERR: (TEST) Creating timer1_id. Stat %d\n", stat) ;
-       return BAD ;
-    }
-
-    /* Start the Timer */
-    stat = timer_start (timer_id) ;
-    if (stat == GOOD)
-    {
-       printf ("Started Timer (ID = %x)\n", timer_id) ;
-    } else {
-       printf ("ERR: (TEST) Creating timer1_id. Stat %d\n", stat) ;
-       return BAD ;
-    }
-
     return GOOD ;
 
-} /* End of function test_events() */
+} /* End of function test_tasks() */
 
 

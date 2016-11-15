@@ -6,7 +6,7 @@
 ## Usage of the works is permitted provided that this instrument is retained ##
 ## with the works, so that any entity that uses the works is notified of     ##
 ## this instrument.                                                          ##
-##                                                                           ##	
+##                                                                           ##
 ## DISCLAIMER: THE WORKS ARE WITHOUT WARRANTY.                               ##
 ##                                                                           ##
 ##---------------------------------------------------------------------------##
@@ -25,4 +25,4 @@ OBJS	= $(BLD_DIR)/test_init.o       \
           $(BLD_DIR)/test_timers.o     \
           $(BLD_DIR)/test_speed.o      \
           $(BLD_DIR)/test_msgs.o       \
-	  $(BLD_DIR)/test_events.o
+          $(BLD_DIR)/test_tasks.o
