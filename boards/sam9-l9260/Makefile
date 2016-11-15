@@ -6,7 +6,7 @@
 ## Usage of the works is permitted provided that this instrument is retained ##
 ## with the works, so that any entity that uses the works is notified of     ##
 ## this instrument.                                                          ##
-##                                                                           ##	
+##                                                                           ##
 ## DISCLAIMER: THE WORKS ARE WITHOUT WARRANTY.                               ##
 ##                                                                           ##
 ##---------------------------------------------------------------------------##
@@ -37,7 +37,7 @@ COMPILE_DIRS = kernel            \
                modules/libs      \
                modules/stdio     \
                modules/tests     \
-               modules/net       
+               modules/net
 
 
 ##################################################
@@ -81,18 +81,19 @@ lib_bld: echo_dir $(OBJS)
 
 
 ##########################
-### BSP Specific Rules ### 
+### BSP Specific Rules ###
 ##########################
 
 ## Tool Info
-TOOL_DIR = /Set_Your_Tool_Base_Here/codesourcery-armgcc-2008q1/bin
+TOOL_DIR = /First_Set_Your_Tool_Dir/bin
+LIB_DIR  = $(TOOL_DIR)/Now_Set_Your_Lib_Dir
 CC       = $(TOOL_DIR)/arm-none-eabi-gcc
 AR       = $(TOOL_DIR)/arm-none-eabi-ar
 AS       = $(TOOL_DIR)/arm-none-eabi-gcc
 LD       = $(TOOL_DIR)/arm-none-eabi-ld
 BIN      = $(TOOL_DIR)/arm-none-eabi-objcopy
 
-## Flags  
+## Flags
 
 CFLAGS   = -mcpu=arm926ej-s -Os -ansi -Wall -fno-stack-protector -nostdinc -fno-builtin -nostartfiles -D$(ARCH) 
 AFLAGS   = -x assembler-with-cpp
@@ -104,10 +105,10 @@ EXE_NAME = $(BLD_DIR)/akalon-$(BSP)-$(CPU)
 ## BSP Build Rule
 
 bsp_bld: echo_dir $(OBJS)
-	$(LD) -T sam9-l9260.ld -N $(OBJS) -nostdlib -L$(BLD_DIR) -L$(TOOL_DIR)/../lib/gcc/arm-none-eabi/4.2.3/ -o $(BLD_DIR)/tmp.o -lakalon-$(ARCH)-$(CPU) -lgcc
+	$(LD) -T sam9-l9260.ld -N $(OBJS) -nostdlib -L$(BLD_DIR) -L$(LIB_DIR) -o $(BLD_DIR)/tmp.o -lakalon-$(ARCH)-$(CPU) -lgcc
 	$(BASE_DIR)/tools/gen_symbols $(BLD_DIR)/tmp.o $(BLD_DIR)/symbols.c
 	$(CC) $(CFLAGS) $(IPATH) -c $(BLD_DIR)/symbols.c -o $(BLD_DIR)/symbols.o
-	$(LD) -T sam9-l9260.ld -nostdlib -N -L$(BLD_DIR) -L$(TOOL_DIR)/../lib/gcc/arm-none-eabi/4.2.3/ $(OBJS) $(BLD_DIR)/symbols.o -o $(EXE_NAME).o -lakalon-$(ARCH)-$(CPU) -lgcc 
+	$(LD) -T sam9-l9260.ld -nostdlib -N -L$(BLD_DIR) -L$(LIB_DIR) $(OBJS) $(BLD_DIR)/symbols.o -o $(EXE_NAME).o -lakalon-$(ARCH)-$(CPU) -lgcc 
 	$(BIN) -O binary $(EXE_NAME).o $(EXE_NAME).bin
 	rm -rf $(OBJS) $(BLD_DIR)/symbols.* $(BLD_DIR)/tmp.o
 

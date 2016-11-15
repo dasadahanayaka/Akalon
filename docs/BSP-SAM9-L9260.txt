@@ -52,11 +52,15 @@ Host     : Linux
 
 Akalon   : 2014-1011
 
-Compiler : GCC V 4.2.3 (Codesourcery Version 2008q1-126). The compiler was
+Compiler : GCC 4.2.3 (Codesourcery Version 2008q1-126). The compiler was
            provided by Olimex. The executables are from the arm-none-eabi 
-           family.
+           family -- or --
 
-Linker   : GNU ld (Codesourcery Version 2008q1-126) 2.18.50.2008215
+           GCC 4.8.3 (Sourcery CodeBench Lite 2014.05-28 4.8.3 20140320
+           (prerelease)  
+
+Linker   : GNU ld (Codesourcery Version 2008q1-126) 2.18.50.2008215 -- or --
+           GNU ld (Sourcery CodeBench Lite 2014.05-28) 2.24.51.20140217
 
 
 Target   : Olimex SAM9-L9260 with a Serial and Ethernet connection (Ethernet
@@ -76,7 +80,7 @@ Building Akalon:
 
       TOOL_DIR=~/Olimex/bin/codesourcery-armgcc-2008q1/bin
 
-      *** NOTE *** Before compiling, TOOL_DIR needs to be set.
+      *** NOTE *** Before compiling, TOOL_DIR and LIB_DIR needs to be set.
 
    b. Change to the bsp directory
       $ cd <base>/boards/sam9-l9260

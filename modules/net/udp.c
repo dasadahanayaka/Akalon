@@ -1,12 +1,12 @@
 /*---------------------------------------------------------------------------*/
 /* Akalon RTOS                                                               */
-/* Copyright (c) 2011-2015, Dasa Dahanayaka                                  */
+/* Copyright (c) 2011-2016, Dasa Dahanayaka                                  */
 /* All rights reserved.                                                      */
 /*                                                                           */
 /* Usage of the works is permitted provided that this instrument is retained */
 /* with the works, so that any entity that uses the works is notified of     */
 /* this instrument.                                                          */
-/*                                                                           */	
+/*                                                                           */
 /* DISCLAIMER: THE WORKS ARE WITHOUT WARRANTY.                               */
 /*                                                                           */
 /*---------------------------------------------------------------------------*/
@@ -22,11 +22,37 @@
 #include <string.h>
 #include "net_priv.h"
 
+
+
+
+/*---------------------------------------------------------------------------*/
+/*                                                                           */
+/* Function Name   : udp_pkt_rx                                              */
+/* Description     : UDP Pkt -> Network Stack                                */
+/* Notes           :                                                         */
+/*                                                                           */
+/*---------------------------------------------------------------------------*/
+void     udp_pkt_rx (netif_t *netif, net_buf_t *net_buf) 
+{
+    eth_hdr_t  *eth_hdr  ;
+    ipv4_hdr_t *ipv4_hdr ;
+
+    eth_hdr   = (eth_hdr_t *)   ((usys) net_buf->data) ;
+    ipv4_hdr  = (ipv4_hdr_t *) (((usys) net_buf->data) + ETH_HDR_SIZE) ;
+
+    NET_BUF_DUMP  (net_buf)  ;
+    ETH_PKT_DUMP  (eth_hdr)  ;
+    IPV4_PKT_DUMP (ipv4_hdr) ;
+
+} /* End of function udp_pkt_rx () */
+
+
+#if 0
 #define  SET_DST(loc,src)    (*loc = src)
 #define  SET_SRC(loc,src)    (*(loc + 2) = src)
 #define  SET_LEN(loc,src)    (*(loc + 4) = src)
 
-#define  UDP_HEADER_SIZE     8
+
 #define  MAX_UDP_PORTS       2048
 #define  MAX_IP_HEADER_SIZE     40 /* Offsets within bufST */
 
@@ -44,8 +70,6 @@ typedef  struct    udpCoreST
 
 
 extern   udpCoreST      udpCoreSD ;
-
-
 
 
 /*---------------------------------------------------------------------------*/
@@ -161,7 +185,6 @@ usys     udp_send (u16 size, void *data, u16 srcPort, u16 dstPort,
 } /* End of function udp_send () */
 
 
-
 /*---------------------------------------------------------------------------*/
 /*                                                                           */
 /* Function Name   : udp_send                                                */
@@ -173,3 +196,4 @@ usys     udp_init (void)
 {
     return GOOD ;
 } /* End of function udp_init () */
+#endif

@@ -48,7 +48,7 @@ typedef  struct    icmp_hdr_t
 /* Notes           :                                                         */
 /*                                                                           */
 /*---------------------------------------------------------------------------*/
-void     icmp_pkt_rx (net_inst_t *net_inst, net_buf_t *net_buf)
+void     icmp_pkt_rx (netif_t *netif, net_buf_t *net_buf)
 {
     icmp_hdr_t *icmp_pkt_in, *icmp_pkt_out ;
     ipv4_hdr_t *ipv4_hdr_in, *ipv4_hdr_out ;
@@ -58,14 +58,14 @@ void     icmp_pkt_rx (net_inst_t *net_inst, net_buf_t *net_buf)
     eth_hdr_in  = (eth_hdr_t *)   ((usys) net_buf->data) ;
     ipv4_hdr_in = (ipv4_hdr_t *) (((usys) net_buf->data) + ETH_HDR_SIZE) ;
     icmp_pkt_in = (icmp_hdr_t *) (((usys) net_buf->data) + ETH_HDR_SIZE  + 
-                                  IPV4_HDR_SIZE) ;
+                                                           IPV4_HDR_SIZE) ;
 
     switch (icmp_pkt_in->type)
     {
         case MSG_TYPE_ECHO_REQUEST :
 
              /* Alloc the frame */
-             if ((pkt = pkt_alloc (net_inst)) == NULL)
+             if ((pkt = pkt_alloc (netif)) == NULL)
              {
                 printf ("ERR: pkt_alloc() failed in handle_arp_pkt() !!\n") ;
                 return ;
@@ -92,18 +92,18 @@ void     icmp_pkt_rx (net_inst_t *net_inst, net_buf_t *net_buf)
 	     /* Initialize the ip header */
              ipv4_hdr_out = (ipv4_hdr_t *) (((usys) pkt) + ETH_HDR_SIZE) ;
 
-	     ipv4_hdr_init (net_inst, ipv4_hdr_out, 
+	     ipv4_hdr_init (netif, ipv4_hdr_out, 
                             ntohs(ipv4_hdr_in->len),
-                            IPV4_TYPE_ICMP, ntohl(ipv4_hdr_in->src)) ;
+                            IPV4_PROTOCOL_ICMP, ntohl(ipv4_hdr_in->src)) ;
 
 
              /* Initialize the eth header */
-             eth_hdr_init (net_inst, pkt, eth_hdr_in->src_mac, ETH_TYPE_IPV4) ;
+             eth_hdr_init (netif, pkt, eth_hdr_in->src_mac, ETH_TYPE_IPV4) ;
 
 
-	     pkt_send (net_inst, pkt, ntohs(ipv4_hdr_in->len) + 
+	     pkt_send (netif, pkt, ntohs(ipv4_hdr_in->len) + 
                        ETH_HDR_SIZE) ;
-	     pkt_free (net_inst, pkt) ;
+	     pkt_free (netif, pkt) ;
 
 	     break ;
 

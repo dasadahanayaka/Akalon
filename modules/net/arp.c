@@ -6,7 +6,7 @@
 /* Usage of the works is permitted provided that this instrument is retained */
 /* with the works, so that any entity that uses the works is notified of     */
 /* this instrument.                                                          */
-/*                                                                           */	
+/*                                                                           */
 /* DISCLAIMER: THE WORKS ARE WITHOUT WARRANTY.                               */
 /*                                                                           */
 /*---------------------------------------------------------------------------*/
@@ -97,6 +97,13 @@ void     update_arp_cache (arp_pkt_t *arp_pkt)
     /* First see if it's already in the cache */
     arp_listing = find_arp_listing (arp_pkt->spa) ;
 
+    if (arp_listing != ARP_CACHE_SIZE)
+    {
+       return ;
+    } else {
+       /* Add to ARP cache <-- DO */
+    }
+
 } /* End of function update_arp_pkt() */
 
 
@@ -109,7 +116,7 @@ void     update_arp_cache (arp_pkt_t *arp_pkt)
 /* Notes           :                                                         */
 /*                                                                           */
 /*---------------------------------------------------------------------------*/
-void     arp_pkt_rx (net_inst_t *net_inst, net_buf_t *net_buf)
+void     arp_pkt_rx (netif_t *netif, net_buf_t *net_buf)
 {
     arp_pkt_t *arp_pkt_in, *arp_pkt_out ;
     pkt_t *pkt ;
@@ -119,28 +126,28 @@ void     arp_pkt_rx (net_inst_t *net_inst, net_buf_t *net_buf)
     arp_pkt_in = (arp_pkt_t *) ( ((usys) net_buf->data) + ETH_HDR_SIZE ) ;
 
     /* Cache if it's an ARP reply */
-    if ((ntohs(arp_pkt_in->oper) == 2) ||   /* Arp Reply pkt  */
+    if ((ntohs(arp_pkt_in->oper) == 2) ||      /* Arp Reply pkt  */
         (arp_pkt_in->tpa == arp_pkt_in->spa))  /* Gratuitous pkt */
     {
+       NET_DEBUG ("Cached Arp Pkt !!!\n") ;
        update_arp_cache (arp_pkt_in) ;
-       printf ("Cache Arp Pkt !!!\n") ;
        return ;
     }
 
     /* Check if the Arp Request is for us */
-    if (net_inst->ip_addr == arp_pkt_in->tpa)
+    if (netif->ip_addr == arp_pkt_in->tpa)
     {
        /* ARP request is for us !!! */
 
        /* Alloc the frame */
-       if ((pkt = pkt_alloc (net_inst)) == NULL)
+       if ((pkt = pkt_alloc (netif)) == NULL)
        {
           printf ("ERR: pkt_alloc() failed in handle_arp_pkt() !!\n") ;
           return ;
        }
 
        /* Initialize the eth header */
-       eth_hdr_init (net_inst, pkt, arp_pkt_in->sha, ETH_TYPE_ARP) ;
+       eth_hdr_init (netif, pkt, arp_pkt_in->sha, ETH_TYPE_ARP) ;
 
        arp_pkt_out = (arp_pkt_t *) (((usys) pkt) + ETH_HDR_SIZE) ;
 
@@ -150,8 +157,8 @@ void     arp_pkt_rx (net_inst_t *net_inst, net_buf_t *net_buf)
        arp_pkt_out->p_len  = 4 ;
        arp_pkt_out->oper   = htons(2) ; /* Reply */
 
-       memcpy (arp_pkt_out->sha, net_inst->mac, 6) ;
-       arp_pkt_out->spa = net_inst->ip_addr ;
+       memcpy (arp_pkt_out->sha, netif->mac, 6) ;
+       arp_pkt_out->spa = netif->ip_addr ;
 
        memcpy (arp_pkt_out->tha, arp_pkt_in->sha, 6) ;
        arp_pkt_out->tpa = arp_pkt_in->spa ;
@@ -163,11 +170,11 @@ void     arp_pkt_rx (net_inst_t *net_inst, net_buf_t *net_buf)
        *tmp32 = crc ;
 
        /* Now send the packet */
-       pkt_send (net_inst, pkt, 64) ;
+       pkt_send (netif, pkt, 64) ;
 
        /* Free the Packet */
-       pkt_free (net_inst, pkt) ;
-    } 
+       pkt_free (netif, pkt) ;
+    }
 
 } /* End of function arp_pkt_rx () */
 
@@ -194,7 +201,7 @@ void     clear_arp_cache (void)
 /* Notes           :                                                         */
 /*                                                                           */
 /*---------------------------------------------------------------------------*/
-usys     arp_init (net_inst_t *net_inst)
+usys     arp_init (netif_t *netif)
 {
     u8 dst_mac [6] = {0xff,0xff,0xff,0xff,0xff,0xff} ;
     arp_pkt_t *arp_pkt ;
@@ -207,14 +214,14 @@ usys     arp_init (net_inst_t *net_inst)
     /** Send a Gratuitous ARP **/
 
     /* Alloc the frame */
-    if ((pkt = pkt_alloc (net_inst)) == NULL)
+    if ((pkt = pkt_alloc (netif)) == NULL)
     {
        printf ("ERR: pkt_alloc() failed in arp_init() !!\n") ;
        return BAD ;
     }
 
     /* Initialize the eth header */
-    eth_hdr_init (net_inst, pkt, dst_mac, ETH_TYPE_ARP) ;
+    eth_hdr_init (netif, pkt, dst_mac, ETH_TYPE_ARP) ;
 
     /* Fill out the ARP data according to the ARP Request Method */
     /* which sets the TPA=SPA and the THA = 0                    */
@@ -227,11 +234,11 @@ usys     arp_init (net_inst_t *net_inst)
 
     arp_pkt->oper   = htons(1) ;
 
-    memcpy (arp_pkt->sha, net_inst->mac, 6) ;
-    arp_pkt->spa = net_inst->ip_addr ;
+    memcpy (arp_pkt->sha, netif->mac, 6) ;
+    arp_pkt->spa = netif->ip_addr ;
 
     memset (arp_pkt->tha, 0, 6) ;
-    arp_pkt->tpa = net_inst->ip_addr ;
+    arp_pkt->tpa = netif->ip_addr ;
 
     /* Calculate the CRC */
     crc = eth_crc_calc ((u8*) pkt, 60) ;
@@ -240,10 +247,10 @@ usys     arp_init (net_inst_t *net_inst)
     *tmp32 = crc ;
 
     /* Now send the packet */
-    pkt_send (net_inst, pkt, 64) ;
+    pkt_send (netif, pkt, 64) ;
 
     /* Free the Packet */
-    pkt_free (net_inst, pkt) ;
+    pkt_free (netif, pkt) ;
 
     return GOOD ;
 

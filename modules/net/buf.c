@@ -6,7 +6,7 @@
 /* Usage of the works is permitted provided that this instrument is retained */
 /* with the works, so that any entity that uses the works is notified of     */
 /* this instrument.                                                          */
-/*                                                                           */	
+/*                                                                           */
 /* DISCLAIMER: THE WORKS ARE WITHOUT WARRANTY.                               */
 /*                                                                           */
 /*---------------------------------------------------------------------------*/
@@ -33,7 +33,7 @@ u8  pkt [PKT_SIZE] ;
 /* Notes           :                                                         */
 /*                                                                           */
 /*---------------------------------------------------------------------------*/
-usys     net_buf_init (net_inst_t *net_inst)
+usys     net_buf_init (netif_t *netif)
 {
     return GOOD ;
 } /* End of function net_buf_init () */
@@ -47,7 +47,7 @@ usys     net_buf_init (net_inst_t *net_inst)
 /* Notes           :                                                         */
 /*                                                                           */
 /*---------------------------------------------------------------------------*/
-pkt_t    *pkt_alloc (net_inst_t *net_inst)
+pkt_t    *pkt_alloc (netif_t *netif)
 {
     memset (&pkt, 0, PKT_SIZE) ;
     return ((pkt_t *) &pkt) ;
@@ -62,7 +62,7 @@ pkt_t    *pkt_alloc (net_inst_t *net_inst)
 /* Notes           :                                                         */
 /*                                                                           */
 /*---------------------------------------------------------------------------*/
-void     pkt_free  (net_inst_t *net_inst, pkt_t *pkt)
+void     pkt_free  (netif_t *netif, pkt_t *pkt)
 {
 } /* End of function pkt_free () */
 

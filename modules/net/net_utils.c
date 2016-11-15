@@ -6,7 +6,7 @@
 /* Usage of the works is permitted provided that this instrument is retained */
 /* with the works, so that any entity that uses the works is notified of     */
 /* this instrument.                                                          */
-/*                                                                           */	
+/*                                                                           */
 /* DISCLAIMER: THE WORKS ARE WITHOUT WARRANTY.                               */
 /*                                                                           */
 /*---------------------------------------------------------------------------*/
@@ -69,7 +69,7 @@ u16      crc16_calc (void *data, u16 len)
 /* Notes           :                                                         */
 /*                                                                           */
 /*---------------------------------------------------------------------------*/
-usys     pkt_send (net_inst_t *net_inst, pkt_t *pkt, usys size) 
+usys     pkt_send (netif_t *netif, pkt_t *pkt, usys size) 
 {
     if (net_link.tx_func != NULL)
        if (net_link.tx_func (DONT_WAIT, size, pkt) == GOOD)
@@ -87,7 +87,7 @@ usys     pkt_send (net_inst_t *net_inst, pkt_t *pkt, usys size)
 /* Notes           :                                                         */
 /*                                                                           */
 /*---------------------------------------------------------------------------*/
-void     dev_buf_free (net_inst_t *inst, net_buf_t *buf) 
+void     dev_buf_free (netif_t *inst, net_buf_t *buf) 
 {
     if (inst->buf_free_func == NULL)
        return ;
